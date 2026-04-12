@@ -82,3 +82,9 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
+
+### BeadBoard v1.0.0+ Agent State Changes
+**IMPORTANT**: In `bd` version 1.0.0 and above, the `bd agent state <id> <state>` command has been completely removed.
+Instead, use the generic label/state tracking command:
+`bd set-state <bead_id> state=<spawning|running|working|done> --reason "<what you are doing>"`
+Do not use `bb agent` commands if they throw errors, just update the state directly on the bead.
