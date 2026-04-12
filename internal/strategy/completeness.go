@@ -11,8 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/shopspring/decimal"
 
+	"arbitrage/internal/dashboard"
 	"arbitrage/internal/execution"
 	"arbitrage/internal/market"
+	"arbitrage/internal/storage"
 )
 
 // CompletenessArbitrage is a phase 0 smoke test strategy.
@@ -26,9 +28,10 @@ type CompletenessArbitrage struct {
 	marketOutcomes  map[string][]string
 	takerFee        decimal.Decimal
 	minProfitMargin decimal.Decimal
+	broadcaster     *dashboard.Broadcaster
 }
 
-func NewCompletenessArbitrage(clobManager *market.CLOBManager, execClient *execution.Client, privateKey *ecdsa.PrivateKey, makerAddress common.Address, takerFee decimal.Decimal, minProfitMargin decimal.Decimal) *CompletenessArbitrage {
+func NewCompletenessArbitrage(clobManager *market.CLOBManager, execClient *execution.Client, privateKey *ecdsa.PrivateKey, makerAddress common.Address, takerFee decimal.Decimal, minProfitMargin decimal.Decimal, broadcaster *dashboard.Broadcaster) *CompletenessArbitrage {
 	return &CompletenessArbitrage{
 		clobManager:     clobManager,
 		execClient:      execClient,
@@ -37,6 +40,7 @@ func NewCompletenessArbitrage(clobManager *market.CLOBManager, execClient *execu
 		marketOutcomes:  make(map[string][]string),
 		takerFee:        takerFee,
 		minProfitMargin: minProfitMargin,
+		broadcaster:     broadcaster,
 	}
 }
 
@@ -75,6 +79,19 @@ func (ca *CompletenessArbitrage) Evaluate() {
 			profitPerShare := one.Sub(totalCostWithFee)
 			log.Printf("[ARBITRAGE] Condition: %s | Cost to Buy All (inc fees): %s | Guaranteed Profit/Share: %s | Max Size: %s",
 				conditionID, totalCostWithFee.String(), profitPerShare.String(), minSize.String())
+
+			profitFloat, _ := profitPerShare.Float64()
+			if err := storage.LogTrade("completeness", conditionID, profitFloat); err != nil {
+				log.Printf("Failed to log trade: %v", err)
+			}
+			if ca.broadcaster != nil {
+				ca.broadcaster.Broadcast(map[string]interface{}{
+					"type":      "ARBITRAGE",
+					"condition": conditionID,
+					"profit":    profitFloat,
+					"timestamp": time.Now(),
+				})
+			}
 
 			if ca.execClient == nil || ca.privateKey == nil {
 				log.Println("[ARBITRAGE] Execution client or private key not set, skipping execution.")

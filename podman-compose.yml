@@ -7,4 +7,4 @@ services:
     restart: always
     env_file: .env
     volumes:
-      - ./data:/app/data
+      - ./.allele:/app/.allele

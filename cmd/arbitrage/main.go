@@ -14,9 +14,11 @@ import (
 
 	"arbitrage/internal/alerting"
 	"arbitrage/internal/config"
+	"arbitrage/internal/dashboard"
 	"arbitrage/internal/execution"
 	"arbitrage/internal/market"
 	"arbitrage/internal/polymarket"
+	"arbitrage/internal/storage"
 	"arbitrage/internal/strategy"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
@@ -84,10 +86,19 @@ func main() {
 	msgChan := make(chan []byte, 1000)
 
 	// Initialize Historical Data Recorder
-	recorder, err := market.NewRecorder("data/historical")
+	recorder, err := market.NewRecorder(".allele/historical")
 	if err != nil {
 		log.Fatalf("Failed to initialize recorder: %v", err)
 	}
+
+	// Initialize Database
+	if err := storage.InitDB(".allele/trading.db"); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// Initialize Broadcaster
+	broadcaster := dashboard.NewBroadcaster()
+	go broadcaster.Start(":8081")
 
 	// Initialize CLOB Manager
 	clobManager := market.NewCLOBManager()
@@ -109,7 +120,7 @@ func main() {
 	// Note: using hardcoded 2% (0.02) taker fee.
 	takerFee := decimal.NewFromFloat(0.02)
 	minProfitMargin := decimal.NewFromFloat(cfg.MinNetProfitMargin)
-	completenessArb := strategy.NewCompletenessArbitrage(clobManager, execClient, privateKey, cfg.PublicAddress, takerFee, minProfitMargin)
+	completenessArb := strategy.NewCompletenessArbitrage(clobManager, execClient, privateKey, cfg.PublicAddress, takerFee, minProfitMargin, broadcaster)
 
 	// Initialize WebSocket Client
 	client := polymarket.NewWsClient(polymarket.DefaultWSEndpoint)
