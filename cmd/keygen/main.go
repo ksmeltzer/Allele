@@ -31,7 +31,7 @@ func main() {
 
 	// Remove 0x prefix if present
 	privKeyHex = strings.TrimPrefix(privKeyHex, "0x")
-	
+
 	privKey, err := crypto.HexToECDSA(privKeyHex)
 	if err != nil {
 		log.Fatalf("Invalid private key: %v", err)
@@ -131,6 +131,22 @@ func main() {
 		log.Fatalf("Failed to unmarshal JSON: %v. Body: %s", err, string(body))
 	}
 
+	// Automate updating the .env file
+	envMap, err := godotenv.Read(".env")
+	if err != nil {
+		log.Printf("Warning: Could not read .env file for writing, will just print to console: %v", err)
+	} else {
+		envMap["POLY_API_KEY"] = result.ApiKey
+		envMap["POLY_API_SECRET"] = result.Secret
+		envMap["POLY_API_PASSPHRASE"] = result.Passphrase
+
+		if err := godotenv.Write(envMap, ".env"); err != nil {
+			log.Printf("Warning: Failed to write to .env file: %v", err)
+		} else {
+			fmt.Println("✅ Successfully injected API credentials into .env file!")
+		}
+	}
+
 	fmt.Println("======================================")
 	fmt.Println("🎉 Polymarket API Key Generated! 🎉")
 	fmt.Println("======================================")
@@ -138,5 +154,4 @@ func main() {
 	fmt.Printf("SECRET     : %s\n", result.Secret)
 	fmt.Printf("PASSPHRASE : %s\n", result.Passphrase)
 	fmt.Println("======================================")
-	fmt.Println("Copy these values into your .env file.")
 }

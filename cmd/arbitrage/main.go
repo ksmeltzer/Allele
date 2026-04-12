@@ -4,12 +4,15 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"arbitrage/internal/alerting"
 	"arbitrage/internal/config"
 	"arbitrage/internal/execution"
 	"arbitrage/internal/market"
@@ -26,6 +29,47 @@ type NewMarketEvent struct {
 }
 
 func main() {
+	// Load config early for alerting
+	cfg := config.LoadConfig()
+
+	// Connect to watchdog
+	watchdogConn, err := net.Dial("tcp", "127.0.0.1:9999")
+	if err != nil {
+		log.Printf("Warning: Could not connect to watchdog daemon: %v", err)
+	} else {
+		defer watchdogConn.Close()
+	}
+
+	sendWatchdog := func(event alerting.Event, data map[string]interface{}) {
+		if watchdogConn == nil {
+			return
+		}
+		payload := alerting.Payload{Event: event, Data: data}
+		b, err := json.Marshal(payload)
+		if err == nil {
+			b = append(b, '\n')
+			_, _ = watchdogConn.Write(b)
+		}
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			sendWatchdog(alerting.EventCrash, map[string]interface{}{"error": fmt.Sprintf("%v", r)})
+			panic(r)
+		}
+	}()
+
+	sendWatchdog(alerting.EventBoot, nil)
+
+	// Start heartbeat goroutine
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			sendWatchdog(alerting.EventHeartbeat, nil)
+		}
+	}()
+
 	log.Println("Starting Polymarket Data Recorder & Trading Engine...")
 
 	// Create root context that listens for interrupt signals
@@ -48,11 +92,8 @@ func main() {
 	// Initialize CLOB Manager
 	clobManager := market.NewCLOBManager()
 
-	// Load config
-	cfg := config.LoadConfig()
-
 	// Initialize Execution Client
-	execClient := execution.NewClient()
+	execClient := execution.NewClient(cfg.PolyApiKey, cfg.PolyApiSecret, cfg.PolyApiPassphrase)
 
 	var privateKey *ecdsa.PrivateKey
 	if cfg.PolygonPrivateKey != "" {
@@ -67,7 +108,8 @@ func main() {
 	// Initialize Strategy
 	// Note: using hardcoded 2% (0.02) taker fee.
 	takerFee := decimal.NewFromFloat(0.02)
-	completenessArb := strategy.NewCompletenessArbitrage(clobManager, execClient, privateKey, cfg.PublicAddress, takerFee)
+	minProfitMargin := decimal.NewFromFloat(cfg.MinNetProfitMargin)
+	completenessArb := strategy.NewCompletenessArbitrage(clobManager, execClient, privateKey, cfg.PublicAddress, takerFee, minProfitMargin)
 
 	// Initialize WebSocket Client
 	client := polymarket.NewWsClient(polymarket.DefaultWSEndpoint)
@@ -159,4 +201,5 @@ func main() {
 
 	<-ctx.Done()
 	log.Println("Shutdown complete.")
+	sendWatchdog(alerting.EventShutdown, nil)
 }

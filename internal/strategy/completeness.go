@@ -19,22 +19,24 @@ import (
 // It checks if buying all mutually exclusive outcomes (e.g., Yes + No)
 // costs less than the guaranteed $1.00 payout.
 type CompletenessArbitrage struct {
-	clobManager    *market.CLOBManager
-	execClient     *execution.Client
-	privateKey     *ecdsa.PrivateKey
-	makerAddress   common.Address
-	marketOutcomes map[string][]string
-	takerFee       decimal.Decimal
+	clobManager     *market.CLOBManager
+	execClient      *execution.Client
+	privateKey      *ecdsa.PrivateKey
+	makerAddress    common.Address
+	marketOutcomes  map[string][]string
+	takerFee        decimal.Decimal
+	minProfitMargin decimal.Decimal
 }
 
-func NewCompletenessArbitrage(clobManager *market.CLOBManager, execClient *execution.Client, privateKey *ecdsa.PrivateKey, makerAddress common.Address, takerFee decimal.Decimal) *CompletenessArbitrage {
+func NewCompletenessArbitrage(clobManager *market.CLOBManager, execClient *execution.Client, privateKey *ecdsa.PrivateKey, makerAddress common.Address, takerFee decimal.Decimal, minProfitMargin decimal.Decimal) *CompletenessArbitrage {
 	return &CompletenessArbitrage{
-		clobManager:    clobManager,
-		execClient:     execClient,
-		privateKey:     privateKey,
-		makerAddress:   makerAddress,
-		marketOutcomes: make(map[string][]string),
-		takerFee:       takerFee,
+		clobManager:     clobManager,
+		execClient:      execClient,
+		privateKey:      privateKey,
+		makerAddress:    makerAddress,
+		marketOutcomes:  make(map[string][]string),
+		takerFee:        takerFee,
+		minProfitMargin: minProfitMargin,
 	}
 }
 
@@ -68,7 +70,7 @@ func (ca *CompletenessArbitrage) Evaluate() {
 		// Apply taker fee: totalCost * (1 + takerFee)
 		totalCostWithFee := totalCost.Mul(one.Add(ca.takerFee))
 
-		if canTrade && totalCostWithFee.LessThan(one) {
+		if canTrade && one.Sub(totalCostWithFee).GreaterThanOrEqual(ca.minProfitMargin) {
 			// Found an opportunity!
 			profitPerShare := one.Sub(totalCostWithFee)
 			log.Printf("[ARBITRAGE] Condition: %s | Cost to Buy All (inc fees): %s | Guaranteed Profit/Share: %s | Max Size: %s",
@@ -93,7 +95,7 @@ func (ca *CompletenessArbitrage) Evaluate() {
 					TokenId:       tokenId,
 					MakerAmount:   big.NewInt(1000000), // 1 USDC = 1,000,000
 					TakerAmount:   big.NewInt(1000000), // 1 Share = 1,000,000
-					Expiration:    big.NewInt(time.Now().Add(60 * time.Second).Unix()),
+					Expiration:    big.NewInt(time.Now().Add(2 * time.Second).Unix()),
 					Nonce:         big.NewInt(0),
 					FeeRateBps:    big.NewInt(0),
 					Side:          0, // BUY

@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  arbitrage-bot:
+    build: .
+    container_name: arbitrage_engine
+    restart: always
+    env_file: .env
+    volumes:
+      - ./data:/app/data
