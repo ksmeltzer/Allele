@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "arbitrage",
+  "project_id": "33f9a8a1-88d3-4904-a1de-b56a24314026"
+}
