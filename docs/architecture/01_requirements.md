@@ -3,7 +3,7 @@
 ## 1. Business Requirements
 * **Goal**: Build an AI-driven backtesting and live-trading framework to test statistical theories and execute arbitrage opportunities on prediction markets (specifically Polymarket).
 * **Focus**: Mathematical and statistical arbitrage, expected value (+EV), and historical data simulation.
-* **Risk Tolerance**: Strict adherence to capital preservation. The absolute maximum capital allocation for the entire system is configured by default to $100 but can be configured by the user for the initial live testing phase. Strategies with unbounded or highly asymmetric downside risk (e.g., selling low-probability "miracle" outcomes for tiny gains) are strictly forbidden.
+* **Risk Tolerance**: Strict adherence to capital preservation. The absolute maximum capital allocation for the entire system is configured by default to $100 but can be configured by the user for the initial live testing phase. Strategies with unbounded or highly asymmetric downside risk (e.g., selling low-probability "miracle" outcomes for tiny gains) are banned by default, but this can be disabled in the user configuration for experimental strategies.
 * **Operational Mode**: The system must operate entirely within the hidden `.allele` directory for all local data, SQLite DBs, and watchdog binaries.
 
 ## 2. Functional Requirements

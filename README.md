@@ -55,7 +55,7 @@ To support LLMs, proprietary stock markets, and AI without compromising the secu
 For the current live testing phase, the absolute maximum capital allocation for the entire system is configured by default to a conservative **$100** cap. This is fully configurable by the user via the system settings..
 
 ### 4. Asymmetric Risk Ban
-Strategies with unbounded or highly asymmetric downside risk (e.g., betting heavily against low-probability "miracle" outcomes for tiny "Theta decay" gains) are strictly prohibited. 
+Strategies with unbounded or highly asymmetric downside risk (e.g., betting heavily against low-probability "miracle" outcomes for tiny "Theta decay" gains) are banned by default, but this can be disabled in the user configuration for experimental strategies. 
 
 ### 5. Global Ensemble Diversity (Genetic Arena)
 The GA fitness function enforces "Ensemble Diversity" across all active exchanges simultaneously. The Capital Allocator will ruthlessly defund an organism trading Polymarket if an organism trading E*TRADE demonstrates a higher risk-adjusted return (Sortino Ratio). The goal is to build a global basket of uncorrelated alphas.
