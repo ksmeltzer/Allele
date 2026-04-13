@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CausalityTrace from './components/CausalityTrace';
+import PluginManager from './components/PluginManager';
 
 function App() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -39,7 +40,7 @@ function App() {
         <h1 className="text-3xl font-bold text-purple-400">🧬 .allele Strategy Arena</h1>
       </header>
 
-      <div className="flex flex-wrap lg:flex-nowrap gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Side: Allele Radar */}
         <div className="flex-1 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-[80vh] overflow-hidden flex flex-col">
           <h2 className="text-xl font-semibold mb-4 text-gray-300">Radar Logs</h2>
@@ -64,19 +65,24 @@ function App() {
         {/* Center: Causality Trace */}
         <CausalityTrace sideliningReasons={[]} />
 
-        {/* Right Side: System Health */}
-        <div className="w-full lg:w-80 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-fit">
-          <h2 className="text-xl font-semibold mb-4 text-gray-300">System Health</h2>
-          
-          <div className="flex items-center space-x-3 mb-6 p-4 bg-gray-900 rounded border border-gray-700">
-            <div className="flex-1">
-              <span className="text-sm text-gray-400 block">WebSocket Status</span>
-              <span className={`font-semibold ${connected ? 'text-green-400' : 'text-red-400'}`}>
-                {connected ? 'Connected' : 'Disconnected'}
-              </span>
+        {/* Right Side: System Health & Plugins */}
+        <div className="w-full lg:w-[400px] flex flex-col space-y-8">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-fit">
+            <h2 className="text-xl font-semibold mb-4 text-gray-300">System Health</h2>
+            
+            <div className="flex items-center space-x-3 mb-6 p-4 bg-gray-900 rounded border border-gray-700">
+              <div className="flex-1">
+                <span className="text-sm text-gray-400 block">WebSocket Status</span>
+                <span className={`font-semibold ${connected ? 'text-green-400' : 'text-red-400'}`}>
+                  {connected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
+              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
             </div>
-            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
           </div>
+
+          {/* Plugin Manager injected here */}
+          <PluginManager />
         </div>
       </div>
     </div>
