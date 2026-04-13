@@ -31,10 +31,10 @@ func NewBroadcaster() *Broadcaster {
 		},
 		mockManifests: []abi.Manifest{
 			{
-				Name:        "allele-exchange-polymarket",
-				Version:     "v1.0.0",
-				Description: "Polymarket Exchange Adapter",
-				Author:      "Allele Org",
+				Name:         "allele-exchange-polymarket",
+				Version:      "v1.0.0",
+				Description:  "Polymarket Exchange Adapter",
+				Author:       "Allele Org",
 				Dependencies: []abi.Dependency{},
 				Config: []abi.ConfigField{
 					{Key: "POLY_API_KEY", Type: "secret", Description: "Polymarket API Key", Required: true},
@@ -48,7 +48,7 @@ func NewBroadcaster() *Broadcaster {
 				Description: "Cross-Market Correlation Arbitrage",
 				Author:      "Allele Org",
 				Dependencies: []abi.Dependency{
-					{Name: "allele-exchange-polymarket", Type: "exchange", Version: ">=v1.0.0"},
+					{Name: "allele-exchange-polymarket", Type: "exchange", Version: ">=v1.0.0", Url: "https://github.com/ksmeltzer/allele-exchange-polymarket/releases/download/v1.0.0/plugin.wasm"},
 				},
 				Config: []abi.ConfigField{
 					{Key: "MIN_SPREAD", Type: "string", Description: "Minimum spread to execute", Required: true},
@@ -163,7 +163,7 @@ func (b *Broadcaster) Start(port string) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		
+
 		// If the user submits masked value, ignore it
 		if req.Value == "********" {
 			w.WriteHeader(http.StatusOK)
