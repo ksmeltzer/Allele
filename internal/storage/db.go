@@ -46,10 +46,22 @@ func createTables() error {
 		fitness REAL
 	);`
 
+	// This table replaces the .env file. The UI collects config params defined
+	// by the plugin's Manifest and stores them here so the engine can inject them.
+	configTable := `CREATE TABLE IF NOT EXISTS plugin_config (
+		plugin_name TEXT NOT NULL,
+		key TEXT NOT NULL,
+		value TEXT NOT NULL,
+		PRIMARY KEY (plugin_name, key)
+	);`
+
 	if _, err := DB.Exec(tradesTable); err != nil {
 		return err
 	}
 	if _, err := DB.Exec(strategiesTable); err != nil {
+		return err
+	}
+	if _, err := DB.Exec(configTable); err != nil {
 		return err
 	}
 	return nil
@@ -58,5 +70,28 @@ func createTables() error {
 func LogTrade(strategy, conditionID string, profit float64) error {
 	query := `INSERT INTO trades (strategy, condition_id, profit) VALUES (?, ?, ?)`
 	_, err := DB.Exec(query, strategy, conditionID, profit)
+	return err
+}
+
+// GetPluginConfig returns the configuration for a given plugin key, avoiding the need for .env variables.
+func GetPluginConfig(pluginName, key string) (string, error) {
+	query := `SELECT value FROM plugin_config WHERE plugin_name = ? AND key = ?`
+	var val string
+	err := DB.QueryRow(query, pluginName, key).Scan(&val)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil // config not set yet
+		}
+		return "", err
+	}
+	return val, nil
+}
+
+// SetPluginConfig stores a UI-collected parameter into the database.
+func SetPluginConfig(pluginName, key, value string) error {
+	query := `INSERT INTO plugin_config (plugin_name, key, value) 
+		VALUES (?, ?, ?) 
+		ON CONFLICT(plugin_name, key) DO UPDATE SET value=excluded.value;`
+	_, err := DB.Exec(query, pluginName, key, value)
 	return err
 }

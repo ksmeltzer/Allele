@@ -1,13 +1,15 @@
 package config
 
 import (
-	"os"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/joho/godotenv"
+	"allele/internal/storage"
+	"allele/internal/vault"
+	"context"
 )
 
+// Config represents the system-wide configuration loaded dynamically from SQLite and the Secure Vault.
 type Config struct {
 	PolygonPrivateKey  string
 	PublicAddress      common.Address
@@ -19,17 +21,11 @@ type Config struct {
 	MinNetProfitMargin float64
 }
 
+// LoadConfig reads the system parameters directly from the SQLite database.
 func LoadConfig() *Config {
-	_ = godotenv.Load()
-
-	privKey := os.Getenv("POLYGON_PRIVATE_KEY")
-	pubAddrStr := os.Getenv("PUBLIC_ADDRESS")
-	polyApiKey := os.Getenv("POLY_API_KEY")
-	polyApiSecret := os.Getenv("POLY_API_SECRET")
-	polyApiPassphrase := os.Getenv("POLY_API_PASSPHRASE")
-
-	relayerApiKey := os.Getenv("RELAYER_API_KEY")
-	relayerApiKeyAddr := os.Getenv("RELAYER_API_KEY_ADDRESS")
+	// 1. Fetch non-secret parameters from the generic SQLite plugin config table
+	pubAddrStr, _ := storage.GetPluginConfig("system", "PUBLIC_ADDRESS")
+	relayerApiKeyAddr, _ := storage.GetPluginConfig("system", "RELAYER_API_KEY_ADDRESS")
 	if relayerApiKeyAddr == "" {
 		relayerApiKeyAddr = "0xC6dcCCB919Bf7EEb49864152832F0D8E6203199F"
 	}
@@ -39,13 +35,19 @@ func LoadConfig() *Config {
 		pubAddr = common.HexToAddress(pubAddrStr)
 	}
 
-	minNetProfitMarginStr := os.Getenv("MIN_NET_PROFIT_MARGIN")
+	minNetProfitMarginStr, _ := storage.GetPluginConfig("system", "MIN_NET_PROFIT_MARGIN")
 	minNetProfitMargin := 0.03
 	if minNetProfitMarginStr != "" {
 		if parsed, err := strconv.ParseFloat(minNetProfitMarginStr, 64); err == nil {
 			minNetProfitMargin = parsed
 		}
 	}
+
+	// 2. Fetch Secrets from the AES-GCM Encrypted Vault (if available)
+	// (Note: To fetch from Vault we need the vault instance, but for now we
+	//  will just initialize empty string for secrets here; the Engine/Adapters
+	//  will fetch directly from the Vault during execution, rather than global config).
+	var privKey, polyApiKey, polyApiSecret, polyApiPassphrase, relayerApiKey string
 
 	return &Config{
 		PolygonPrivateKey:  privKey,

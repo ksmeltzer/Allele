@@ -12,19 +12,24 @@ import (
 	"time"
 
 	"allele/internal/alerting"
-
-	"github.com/joho/godotenv"
+	"allele/internal/storage"
 )
 
 func main() {
-	// Load .env
-	_ = godotenv.Load()
+	if len(os.Args) < 2 {
+		log.Fatalf("Usage: watchdog <SQLITE_DB_PATH>")
+	}
+	dbPath := os.Args[1]
 
-	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	chatID := os.Getenv("TELEGRAM_CHAT_ID")
+	if err := storage.InitDB(dbPath); err != nil {
+		log.Fatalf("Failed to init SQLite db: %v", err)
+	}
+
+	botToken, _ := storage.GetPluginConfig("system", "TELEGRAM_BOT_TOKEN")
+	chatID, _ := storage.GetPluginConfig("system", "TELEGRAM_CHAT_ID")
 
 	if botToken == "" || chatID == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set in .env")
+		log.Println("Warning: TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID not set in SQLite config. Telegram alerts disabled.")
 	}
 
 	alerter := alerting.NewTelegramAlerter(botToken, chatID)

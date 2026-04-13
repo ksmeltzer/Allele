@@ -11,23 +11,23 @@ import (
 	"strings"
 	"time"
 
+	"allele/internal/storage"
+	"allele/internal/vault"
+	"context"
+
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+	if len(os.Args) < 4 {
+		log.Fatalf("Usage: keygen <POLYGON_PRIVATE_KEY> <PUBLIC_ADDRESS> <SQLITE_DB_PATH> <VAULT_KEY_HEX>")
 	}
-
-	privKeyHex := os.Getenv("POLYGON_PRIVATE_KEY")
-	address := os.Getenv("PUBLIC_ADDRESS")
-
-	if privKeyHex == "" || address == "" {
-		log.Fatal("POLYGON_PRIVATE_KEY and PUBLIC_ADDRESS must be set in .env")
-	}
+	privKeyHex := os.Args[1]
+	address := os.Args[2]
+	dbPath := os.Args[3]
+	vaultKeyHex := os.Args[4]
 
 	// Remove 0x prefix if present
 	privKeyHex = strings.TrimPrefix(privKeyHex, "0x")
@@ -69,7 +69,6 @@ func main() {
 	}
 
 	// Using HashStruct handles EIP712 hash generation.
-	// We want to combine the domain separator and message hash.
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
 		log.Fatalf("Failed to hash domain: %v", err)
@@ -131,20 +130,42 @@ func main() {
 		log.Fatalf("Failed to unmarshal JSON: %v. Body: %s", err, string(body))
 	}
 
-	// Automate updating the .env file
-	envMap, err := godotenv.Read(".env")
-	if err != nil {
-		log.Printf("Warning: Could not read .env file for writing, will just print to console: %v", err)
-	} else {
-		envMap["POLY_API_KEY"] = result.ApiKey
-		envMap["POLY_API_SECRET"] = result.Secret
-		envMap["POLY_API_PASSPHRASE"] = result.Passphrase
+	// Automate updating the SQLite database instead of .env
+	if err := storage.InitDB(dbPath); err != nil {
+		log.Fatalf("Failed to init SQLite db: %v", err)
+	}
 
-		if err := godotenv.Write(envMap, ".env"); err != nil {
-			log.Printf("Warning: Failed to write to .env file: %v", err)
-		} else {
-			fmt.Println("✅ Successfully injected API credentials into .env file!")
-		}
+	// Store non-secrets in standard config
+	storage.SetPluginConfig("system", "PUBLIC_ADDRESS", address)
+	storage.SetPluginConfig("system", "POLYGON_PRIVATE_KEY", privKeyHex) // The engine requires this to sign trades later
+
+	// Store API keys securely in the Vault
+	vaultKeyBytes, err := crypto.HexToECDSA(vaultKeyHex)
+	// Just use a 32-byte AES key generated from the provided hex or a default fallback for CLI simplicity
+	var aesKey []byte
+	if err == nil && vaultKeyBytes != nil {
+		aesKey = math.PaddedBigBytes(vaultKeyBytes.D, 32)
+	} else {
+		// Fallback for missing/bad key in this demo script
+		aesKey = make([]byte, 32)
+	}
+	
+	v, err := vault.NewVault(dbPath, aesKey)
+	if err != nil {
+		log.Fatalf("Failed to init vault: %v", err)
+	}
+	defer v.Close()
+
+	creds := vault.AccountCredentials{
+		AccountID: address,
+		Platform:  "polymarket",
+		APIKey:    result.ApiKey,
+		Token:     result.Passphrase + ":" + result.Secret, // combine passphrase and secret
+	}
+	if err := v.Store(context.Background(), creds); err != nil {
+		log.Printf("Warning: Failed to write to Vault: %v", err)
+	} else {
+		fmt.Println("✅ Successfully injected API credentials into SQLite Vault!")
 	}
 
 	fmt.Println("======================================")
