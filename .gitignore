@@ -17,3 +17,5 @@ allele_memories.json
 .cursor/
 .vscode/
 .idea/
+.sessions/
+.obsidian/
