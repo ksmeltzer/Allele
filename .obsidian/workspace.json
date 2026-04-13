@@ -197,6 +197,19 @@
   },
   "active": "9e4fb17fef1fc76b",
   "lastOpenFiles": [
+    "docs/architecture/06_glossary.md",
+    "docs/architecture/05_genetic_algorithm.md",
+    "docs/architecture/04_architecture.md",
+    "docs/architecture/03_functional.md",
+    "docs/architecture/02_topology.md",
+    "docs/architecture/01_requirements.md",
+    "docs/strategies/resolution_timing_arbitrage.md",
+    "docs/strategies/cross_market_correlation_arbitrage.md",
+    "docs/strategies/bayesian_consistency_arbitrage.md",
+    "docs/strategies/completeness_arbitrage.md",
+    "docs/strategies/README.md",
+    "docs/strategies",
+    "docs/architecture",
     "internal/alerting/telegram.go",
     "Strata MemorySpace.canvas"
   ]
