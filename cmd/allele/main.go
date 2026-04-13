@@ -34,6 +34,7 @@ type NewMarketEvent struct {
 }
 
 func main() {
+	initCLI()
 	// Load config early for alerting
 	cfg := config.LoadConfig()
 
