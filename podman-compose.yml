@@ -8,3 +8,16 @@ services:
     env_file: .env
     volumes:
       - ./.allele:/app/.allele
+    ports:
+      - "8081:8081"
+
+  ui:
+    build: 
+      context: ./ui
+      dockerfile: Containerfile
+    container_name: arbitrage_ui
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - arbitrage-bot

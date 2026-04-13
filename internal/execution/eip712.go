@@ -117,3 +117,28 @@ func SignOrder(order Order, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 
 	return crypto.Sign(hash, privateKey)
 }
+
+func HashOrder(order Order) ([]byte, error) {
+	typedData := apitypes.TypedData{
+		Types:       OrderTypes,
+		PrimaryType: "Order",
+		Domain:      PolymarketDomain,
+		Message: map[string]interface{}{
+			"salt":          (*math.HexOrDecimal256)(order.Salt),
+			"maker":         order.Maker.Hex(),
+			"signer":        order.Signer.Hex(),
+			"taker":         order.Taker.Hex(),
+			"tokenId":       (*math.HexOrDecimal256)(order.TokenId),
+			"makerAmount":   (*math.HexOrDecimal256)(order.MakerAmount),
+			"takerAmount":   (*math.HexOrDecimal256)(order.TakerAmount),
+			"expiration":    (*math.HexOrDecimal256)(order.Expiration),
+			"nonce":         (*math.HexOrDecimal256)(order.Nonce),
+			"feeRateBps":    (*math.HexOrDecimal256)(order.FeeRateBps),
+			"side":          math.NewHexOrDecimal256(int64(order.Side)),
+			"signatureType": math.NewHexOrDecimal256(int64(order.SignatureType)),
+		},
+	}
+
+	hash, _, err := apitypes.TypedDataAndHash(typedData)
+	return hash, err
+}

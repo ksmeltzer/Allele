@@ -29,6 +29,20 @@ func main() {
 
 	alerter := alerting.NewTelegramAlerter(botToken, chatID)
 
+	// Startup check: Ensure arbitrage_engine is running
+	out, err := exec.Command("podman", "ps", "-a", "-q", "-f", "name=arbitrage_engine").Output()
+	if err == nil && len(out) == 0 {
+		log.Fatal("Container arbitrage_engine not found, please run installer")
+	}
+
+	out, err = exec.Command("podman", "ps", "-q", "-f", "name=arbitrage_engine").Output()
+	if err == nil && len(out) == 0 {
+		log.Println("Engine not running at startup. Starting via podman start...")
+		if err := exec.Command("podman", "start", "arbitrage_engine").Run(); err != nil {
+			log.Printf("Failed to start podman container: %v", err)
+		}
+	}
+
 	listener, err := net.Listen("tcp", "127.0.0.1:9999")
 	if err != nil {
 		log.Fatalf("Watchdog failed to listen: %v", err)

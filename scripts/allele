@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Set by install.sh
+PROJECT_ROOT="<PROJECT_ROOT>"
+
+if ! command -v podman &> /dev/null; then
+    echo "Error: podman is not installed. Please install podman first."
+    exit 1
+fi
+
+systemctl is-active --quiet podman.socket || systemctl start --user podman.socket || podman ps &> /dev/null
+
+if [ -n "$PROJECT_ROOT" ] && [ "$PROJECT_ROOT" != "<PROJECT_ROOT>" ]; then
+    cd "$PROJECT_ROOT" || { echo "Project root not found"; exit 1; }
+fi
+
+if [ -z "$(podman ps -a -q -f name=arbitrage_engine)" ]; then
+    echo "Container arbitrage_engine not found, please run installer"
+    exit 1
+fi
+
+if [ -z "$(podman ps -q -f name=arbitrage_engine)" ]; then
+    echo "arbitrage_engine is not running. Starting it..."
+    podman start arbitrage_engine
+fi
+
+if [ -x ".allele/watchdog" ]; then
+    echo "Starting watchdog in the background..."
+    ./.allele/watchdog &
+else
+    echo "Warning: Watchdog daemon not found at .allele/watchdog"
+fi
+
+echo "Launching Arbitrage Dashboard..."
+if command -v xdg-open &> /dev/null; then
+    xdg-open http://allele
+elif command -v open &> /dev/null; then
+    open http://allele
+elif command -v start &> /dev/null; then
+    start http://allele
+else
+    echo "Could not find a browser launcher. Please navigate to http://allele manually."
+fi
