@@ -39,7 +39,7 @@ function App() {
       </header>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Side: Arbitrage Radar */}
+        {/* Left Side: Allele Radar */}
         <div className="flex-1 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-[80vh] overflow-hidden flex flex-col">
           <h2 className="text-xl font-semibold mb-4 text-gray-300">Radar Logs</h2>
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">

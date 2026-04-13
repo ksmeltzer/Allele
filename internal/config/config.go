@@ -17,8 +17,6 @@ type Config struct {
 	RelayerAPIKey      string
 	RelayerAPIKeyAddr  string
 	MinNetProfitMargin float64
-	TelegramBotToken   string
-	TelegramChatID     string
 }
 
 func LoadConfig() *Config {
@@ -49,9 +47,6 @@ func LoadConfig() *Config {
 		}
 	}
 
-	telegramBotToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	telegramChatID := os.Getenv("TELEGRAM_CHAT_ID")
-
 	return &Config{
 		PolygonPrivateKey:  privKey,
 		PublicAddress:      pubAddr,
@@ -61,7 +56,5 @@ func LoadConfig() *Config {
 		RelayerAPIKey:      relayerApiKey,
 		RelayerAPIKeyAddr:  relayerApiKeyAddr,
 		MinNetProfitMargin: minNetProfitMargin,
-		TelegramBotToken:   telegramBotToken,
-		TelegramChatID:     telegramChatID,
 	}
 }

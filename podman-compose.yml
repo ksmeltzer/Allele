@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  arbitrage-bot:
+  allele-bot:
     build: .
-    container_name: arbitrage_engine
+    container_name: allele_engine
     restart: always
     env_file: .env
     volumes:
@@ -15,9 +15,9 @@ services:
     build: 
       context: ./ui
       dockerfile: Containerfile
-    container_name: arbitrage_ui
+    container_name: allele_ui
     restart: always
     ports:
       - "80:80"
     depends_on:
-      - arbitrage-bot
+      - allele-bot

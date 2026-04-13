@@ -29,8 +29,8 @@ If any row is `fail` or `unknown` → run only that check, update this table, co
 
 ## Project Identity
 
-- Project name: arbitrage
-- Repository root: /home/kenton/Documents/arbitrage
+- Project name: allele
+- Repository root: /home/kenton/Documents/allele
 - Primary language/runtime: Go
 - Primary package manager: go mod
 
@@ -56,7 +56,7 @@ If any row is `fail` or `unknown` → run only that check, update this table, co
 ## Command Baseline
 
 - Install: `go mod tidy`
-- Build: `go build ./cmd/arbitrage`
+- Build: `go build ./cmd/allele`
 - Typecheck: `go build ./...`
 - Lint: `go vet ./...`
 - Test: `go test ./...`

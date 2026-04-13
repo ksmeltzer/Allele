@@ -24,4 +24,4 @@ chmod +x "$HOME/.local/bin/allele"
 
 echo "Installation complete!"
 echo ""
-echo "Run 'allele' to launch the Arbitrage Dashboard."
+echo "Run 'allele' to launch the Allele Dashboard."

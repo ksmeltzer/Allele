@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"arbitrage/internal/alerting"
+	"allele/internal/alerting"
 
 	"github.com/joho/godotenv"
 )
@@ -29,16 +29,16 @@ func main() {
 
 	alerter := alerting.NewTelegramAlerter(botToken, chatID)
 
-	// Startup check: Ensure arbitrage_engine is running
-	out, err := exec.Command("podman", "ps", "-a", "-q", "-f", "name=arbitrage_engine").Output()
+	// Startup check: Ensure allele_engine is running
+	out, err := exec.Command("podman", "ps", "-a", "-q", "-f", "name=allele_engine").Output()
 	if err == nil && len(out) == 0 {
-		log.Fatal("Container arbitrage_engine not found, please run installer")
+		log.Fatal("Container allele_engine not found, please run installer")
 	}
 
-	out, err = exec.Command("podman", "ps", "-q", "-f", "name=arbitrage_engine").Output()
+	out, err = exec.Command("podman", "ps", "-q", "-f", "name=allele_engine").Output()
 	if err == nil && len(out) == 0 {
 		log.Println("Engine not running at startup. Starting via podman start...")
-		if err := exec.Command("podman", "start", "arbitrage_engine").Run(); err != nil {
+		if err := exec.Command("podman", "start", "allele_engine").Run(); err != nil {
 			log.Printf("Failed to start podman container: %v", err)
 		}
 	}
@@ -147,7 +147,7 @@ func handleConnection(conn net.Conn, alerter *alerting.TelegramAlerter) {
 	log.Println("Watchdog triggered: Engine crashed or froze. Restarting podman container...")
 	_ = alerter.SendAlert("🚨 WATCHDOG: Engine crashed or froze. Restarting podman container...")
 
-	cmd := exec.Command("podman", "restart", "arbitrage_engine")
+	cmd := exec.Command("podman", "restart", "allele_engine")
 	if err := cmd.Run(); err != nil {
 		errStr := fmt.Sprintf("🚨 WATCHDOG ERROR: Failed to restart podman container: %v", err)
 		log.Println(errStr)

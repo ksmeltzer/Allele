@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"time"
 
-	"arbitrage/internal/core"
-	"arbitrage/internal/execution"
-	"arbitrage/internal/polymarket"
+	"allele/internal/core"
+	"allele/internal/execution"
+	"allele/internal/polymarket"
 	"github.com/ethereum/go-ethereum/common"
 )
 

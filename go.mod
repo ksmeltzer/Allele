@@ -1,4 +1,4 @@
-module arbitrage
+module allele
 
 go 1.25.0
 
