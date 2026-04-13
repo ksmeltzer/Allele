@@ -3,8 +3,11 @@ package engine
 import (
 	"context"
 	"log"
+	"sync"
 
+	"allele/internal/arena"
 	"allele/internal/core"
+	"allele/internal/health"
 )
 
 type Kernel struct {
@@ -13,6 +16,9 @@ type Kernel struct {
 	strategies  map[string]core.IStrategy
 	MarketState *core.MarketState
 	tickChan    chan core.NormalizedTick
+	monitor     *health.Monitor
+	arena       *arena.Arena
+	sidelined   map[string]bool
 }
 
 func NewKernel() *Kernel {
@@ -23,13 +29,20 @@ func NewKernel() *Kernel {
 		MarketState: &core.MarketState{
 			AssetPrices: make(map[string]float64),
 		},
-		tickChan: make(chan core.NormalizedTick, 1000),
+		tickChan:  make(chan core.NormalizedTick, 1000),
+		sidelined: make(map[string]bool),
 	}
 }
 
+func (k *Kernel) SetMonitor(m *health.Monitor) {
+	k.monitor = m
+}
+
+func (k *Kernel) SetArena(a *arena.Arena) {
+	k.arena = a
+}
+
 func (k *Kernel) RegisterExchange(e core.IExchange) {
-	// For simplicity, using "polymarket" as ID for now.
-	// A better way is if IExchange has an ID() method, but core.IExchange doesn't.
 	k.exchanges["polymarket"] = e
 }
 
@@ -53,33 +66,69 @@ func (k *Kernel) Start(ctx context.Context) {
 		case tick := <-k.tickChan:
 			k.MarketState.AssetPrices[tick.AssetID] = tick.Price
 
+			var wg sync.WaitGroup
+			mu := &sync.Mutex{}
+
 			for _, strategy := range k.strategies {
-				actions := strategy.Evaluate(k.MarketState)
-				for _, action := range actions {
-					exchangeID := action.MarketID
-					if exchangeID == "" {
-						exchangeID = "polymarket" // fallback
+				strategyID := strategy.ID()
+				wg.Add(1)
+
+				go func(strategy core.IStrategy, strategyID string) {
+					defer wg.Done()
+
+					if k.monitor != nil {
+						if k.monitor.IsStrategyPaused(strategyID) {
+							if k.arena != nil && !k.sidelined[strategyID] {
+								mu.Lock()
+								if err := k.arena.SidelineOrganism(strategyID); err != nil {
+									log.Printf("Failed to sideline organism %s: %v", strategyID, err)
+								} else {
+									k.sidelined[strategyID] = true
+								}
+								mu.Unlock()
+							}
+							return
+						} else if k.sidelined[strategyID] {
+							if k.arena != nil {
+								mu.Lock()
+								if err := k.arena.ReactivateOrganism(strategyID); err != nil {
+									log.Printf("Failed to reactivate organism %s: %v", strategyID, err)
+								} else {
+									k.sidelined[strategyID] = false
+								}
+								mu.Unlock()
+							} else {
+								k.sidelined[strategyID] = false
+							}
+						}
 					}
 
-					exchange, ok := k.exchanges[exchangeID]
-					if !ok {
-						log.Printf("Exchange not found: %s", exchangeID)
-						continue
-					}
+					actions := strategy.Evaluate(k.MarketState)
+					for _, action := range actions {
+						exchangeID := action.MarketID
+						if exchangeID == "" {
+							exchangeID = "polymarket"
+						}
 
-					// We use "polygon" wallet by default for now
-					wallet, ok := k.wallets["polygon"]
-					if !ok {
-						log.Printf("Wallet not found: polygon")
-						continue
-					}
+						exchange, ok := k.exchanges[exchangeID]
+						if !ok {
+							log.Printf("Exchange not found: %s", exchangeID)
+							continue
+						}
 
-					err := exchange.SubmitOrder(ctx, wallet, action)
-					if err != nil {
-						log.Printf("Failed to submit order: %v", err)
+						wallet, ok := k.wallets["polygon"]
+						if !ok {
+							log.Printf("Wallet not found: polygon")
+							continue
+						}
+
+						if err := exchange.SubmitOrder(ctx, wallet, action); err != nil {
+							log.Printf("Failed to submit order: %v", err)
+						}
 					}
-				}
+				}(strategy, strategyID)
 			}
+			wg.Wait()
 		}
 	}
 }
