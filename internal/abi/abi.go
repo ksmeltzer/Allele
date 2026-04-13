@@ -27,8 +27,9 @@ type ConfigField struct {
 // Dependency defines another plugin that this plugin requires to function.
 type Dependency struct {
 	Name    string `json:"name"`
-	Type    string `json:"type"` // "exchange", "sensor", "strategy"
+	Type    string `json:"type"`    // "exchange", "sensor", "strategy"
 	Version string `json:"version"` // Semver requirement (e.g. ">=v1.0.0")
+	Url     string `json:"url"`     // Download URL for the required WASM module
 }
 
 // Manifest represents the metadata for a Tri-Plugin WASM module.

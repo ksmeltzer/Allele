@@ -17,7 +17,7 @@ Every plugin **must** export a parameterless function named `Manifest` that retu
   "description": "Cross-Market Correlation Arbitrage",
   "author": "Allele Org",
   "dependencies": [
-    {"name": "allele-exchange-polymarket", "type": "exchange", "version": ">=v1.0.0"}
+    {"name": "allele-exchange-polymarket", "type": "exchange", "version": ">=v1.0.0", "url": "https://github.com/ksmeltzer/allele-exchange-polymarket/releases/download/v1.0.0/plugin.wasm"}
   ],
   "config": [
     {"key": "MIN_SPREAD", "type": "string", "description": "Minimum spread to execute", "required": true},
