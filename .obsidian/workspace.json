@@ -197,6 +197,11 @@
   },
   "active": "9e4fb17fef1fc76b",
   "lastOpenFiles": [
+    "strategies/src/completeness/build.sh",
+    "strategies/src/completeness/main.go",
+    "strategies/src/completeness",
+    "strategies/src",
+    "strategies",
     "docs/architecture/06_glossary.md",
     "docs/architecture/05_genetic_algorithm.md",
     "docs/architecture/04_architecture.md",
