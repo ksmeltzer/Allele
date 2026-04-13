@@ -10,3 +10,10 @@
 strata_dump.json
 allele_memories.json
 .obsidian/
+
+# AI and Editor Tooling
+.beads/
+.claude/
+.cursor/
+.vscode/
+.idea/
