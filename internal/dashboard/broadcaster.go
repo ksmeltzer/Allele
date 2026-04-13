@@ -1,10 +1,13 @@
 package dashboard
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"sync"
+
+	"allele/internal/abi"
+	"allele/internal/storage"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,6 +16,9 @@ type Broadcaster struct {
 	conns    map[*websocket.Conn]bool
 	mutex    sync.Mutex
 	upgrader websocket.Upgrader
+	// In a real implementation this would query the loaded WASM modules.
+	// For now, we mock the manifest data for the UI to consume.
+	mockManifests []abi.Manifest
 }
 
 func NewBroadcaster() *Broadcaster {
@@ -23,16 +29,60 @@ func NewBroadcaster() *Broadcaster {
 				return true
 			},
 		},
+		mockManifests: []abi.Manifest{
+			{
+				Name:        "allele-exchange-polymarket",
+				Version:     "v1.0.0",
+				Description: "Polymarket Exchange Adapter",
+				Author:      "Allele Org",
+				Dependencies: []abi.Dependency{},
+				Config: []abi.ConfigField{
+					{Key: "POLY_API_KEY", Type: "secret", Description: "Polymarket API Key", Required: true},
+					{Key: "POLY_API_SECRET", Type: "secret", Description: "Polymarket API Secret", Required: true},
+					{Key: "POLY_API_PASSPHRASE", Type: "secret", Description: "Polymarket API Passphrase", Required: true},
+				},
+			},
+			{
+				Name:        "allele-strategy-cross-market",
+				Version:     "v1.0.0",
+				Description: "Cross-Market Correlation Arbitrage",
+				Author:      "Allele Org",
+				Dependencies: []abi.Dependency{
+					{Name: "allele-exchange-polymarket", Type: "exchange", Version: ">=v1.0.0"},
+				},
+				Config: []abi.ConfigField{
+					{Key: "MIN_SPREAD", Type: "string", Description: "Minimum spread to execute", Required: true},
+					{Key: "EXPERIMENTAL_MODE", Type: "boolean", Description: "Enable risky trades", Required: false},
+				},
+			},
+		},
 	}
 }
 
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (b *Broadcaster) Start(port string) {
-	expectedToken := os.Getenv("BROADCASTER_AUTH_TOKEN")
+	expectedToken, _ := storage.GetPluginConfig("system", "BROADCASTER_AUTH_TOKEN")
 	if expectedToken == "" {
-		log.Fatalf("BROADCASTER_AUTH_TOKEN must be set in the environment variables")
+		expectedToken = "dev-token" // Fallback for dev mode
+		storage.SetPluginConfig("system", "BROADCASTER_AUTH_TOKEN", expectedToken)
+		log.Printf("Warning: BROADCASTER_AUTH_TOKEN not set. Defaulting to 'dev-token'")
 	}
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("auth_token")
 		if token == "" || token != expectedToken {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -64,8 +114,71 @@ func (b *Broadcaster) Start(port string) {
 		}()
 	})
 
-	log.Printf("Starting Broadcaster on localhost:%s", port)
-	if err := http.ListenAndServe("127.0.0.1:"+port, nil); err != nil {
+	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// Attach current values from DB to the mock response
+		type ConfigFieldWithValue struct {
+			abi.ConfigField
+			Value string `json:"value"`
+		}
+		type ManifestWithValues struct {
+			abi.Manifest
+			Config []ConfigFieldWithValue `json:"config"`
+		}
+
+		var resp []ManifestWithValues
+		for _, m := range b.mockManifests {
+			var newConfig []ConfigFieldWithValue
+			for _, c := range m.Config {
+				val, _ := storage.GetPluginConfig(m.Name, c.Key)
+				// Mask secret values when sending to frontend
+				if c.Type == "secret" && val != "" {
+					val = "********"
+				}
+				newConfig = append(newConfig, ConfigFieldWithValue{
+					ConfigField: c,
+					Value:       val,
+				})
+			}
+			resp = append(resp, ManifestWithValues{
+				Manifest: m,
+				Config:   newConfig,
+			})
+		}
+
+		json.NewEncoder(w).Encode(resp)
+	})
+
+	mux.HandleFunc("/api/plugins/config", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var req struct {
+			PluginName string `json:"plugin_name"`
+			Key        string `json:"key"`
+			Value      string `json:"value"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		
+		// If the user submits masked value, ignore it
+		if req.Value == "********" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	log.Printf("Starting Broadcaster (API & WS) on localhost%s", port)
+	if err := http.ListenAndServe("127.0.0.1"+port, enableCORS(mux)); err != nil {
 		log.Fatalf("Broadcaster server failed: %v", err)
 	}
 }

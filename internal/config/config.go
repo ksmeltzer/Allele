@@ -5,8 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"allele/internal/storage"
-	"allele/internal/vault"
-	"context"
 )
 
 // Config represents the system-wide configuration loaded dynamically from SQLite and the Secure Vault.
