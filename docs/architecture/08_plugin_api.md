@@ -6,7 +6,31 @@ This document details the Application Binary Interface (ABI) used to pass data b
 
 ---
 
-## 1. The Memory ABI
+## 1. The Manifest Export
+
+Every plugin **must** export a parameterless function named `Manifest` that returns a JSON string containing the module's metadata, dependencies, and required configuration fields. The Go engine uses this to dynamically build UI forms and resolve dependencies before execution.
+
+```json
+{
+  "name": "allele-strategy-cross-market",
+  "version": "v1.0.0",
+  "description": "Cross-Market Correlation Arbitrage",
+  "author": "Allele Org",
+  "dependencies": [
+    {"name": "allele-exchange-polymarket", "type": "exchange", "version": ">=v1.0.0"}
+  ],
+  "config": [
+    {"key": "MIN_SPREAD", "type": "string", "description": "Minimum spread to execute", "required": true},
+    {"key": "EXPERIMENTAL_MODE", "type": "boolean", "description": "Enable risky trades", "required": false}
+  ]
+}
+```
+
+The memory ABI for returning the `Manifest` string is identical to the `Guest to Host (Return)` ABI described below.
+
+---
+
+## 2. The Memory ABI
 
 Because WebAssembly only understands numeric types (`i32`, `i64`, `f32`, `f64`), passing complex JSON objects requires shared memory serialization.
 
@@ -26,7 +50,7 @@ The plugin must parse the state, compute its signals, serialize a JSON array of 
 
 ---
 
-## 2. Language Examples
+## 3. Language Examples
 
 ### Golang (compiled via TinyGo)
 Go uses `//export` to expose functions to the host. TinyGo is highly recommended for building lightweight WASM modules.
@@ -39,6 +63,15 @@ import (
 	"encoding/json"
 	"unsafe"
 )
+
+//export Manifest
+func Manifest() uint64 {
+	manifestJSON := `{"name": "example-plugin", "version": "v1.0.0", "dependencies": [], "config": []}`
+	outBytes := []byte(manifestJSON)
+	outPtr := uint32(uintptr(unsafe.Pointer(&outBytes[0])))
+	outLen := uint32(len(outBytes))
+	return (uint64(outPtr) << 32) | uint64(outLen)
+}
 
 //export Evaluate
 func Evaluate(statePtr uint32, stateLength uint32) uint64 {
@@ -72,6 +105,14 @@ AssemblyScript compiles a strict subset of TypeScript directly to WebAssembly. I
 
 ```typescript
 // AssemblyScript Plugin
+export function Manifest(): u64 {
+  let outString = '{"name": "example-plugin", "version": "v1.0.0", "dependencies": [], "config": []}';
+  let outBuffer = String.UTF8.encode(outString);
+  let outPtr = changetype<usize>(outBuffer);
+  let outLen = outBuffer.byteLength;
+  return (u64(outPtr) << 32) | u64(outLen);
+}
+
 export function Evaluate(statePtr: i32, stateLen: i32): u64 {
   // 1. Read input from memory
   let jsonString = String.UTF8.decodeUnsafe(statePtr, stateLen);
@@ -99,6 +140,10 @@ Python cannot compile natively to raw WASM easily without embedding a runtime. F
 ```python
 import extism_pdk
 import json
+
+@extism_pdk.plugin_fn
+def manifest():
+    extism_pdk.output('{"name": "example-plugin", "version": "v1.0.0", "dependencies": [], "config": []}')
 
 @extism_pdk.plugin_fn
 def evaluate():
