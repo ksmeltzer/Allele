@@ -6,7 +6,7 @@ import (
 )
 
 func TestRiskGate_ValidateSignals(t *testing.T) {
-	rg := &RiskGate{}
+	rg := NewRiskGate(100.0) // Test with 100 max cap
 
 	signals := []abi.TradeSignal{
 		{Action: "BUY", Size: 10, Price: 5},  // cost = 50, valid
@@ -34,5 +34,25 @@ func TestRiskGate_ValidateSignals(t *testing.T) {
 	expectedReasons := 4
 	if len(reasons) != expectedReasons {
 		t.Errorf("expected %d rejection reasons, got %d", expectedReasons, len(reasons))
+	}
+}
+
+func TestRiskGate_CustomCap(t *testing.T) {
+	rg := NewRiskGate(500.0) // Test with 500 max cap
+
+	signals := []abi.TradeSignal{
+		{Action: "BUY", Size: 40, Price: 10}, // cost = 400, valid
+		{Action: "BUY", Size: 60, Price: 10}, // cost = 600, exceeds custom global cap
+	}
+
+	availableCapital := 1000.0
+	valid, _, err := rg.ValidateSignals(signals, availableCapital)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(valid) != 1 {
+		t.Fatalf("expected 1 valid signal, got %d", len(valid))
 	}
 }

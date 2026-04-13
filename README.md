@@ -51,8 +51,8 @@ To support LLMs, proprietary stock markets, and AI without compromising the secu
 *   **Sensors:** Granted restricted WASI network access to fetch 3rd-party data (e.g., Anthropic API). They *cannot* execute trades.
 *   **Strategies:** Mathematically pure, zero-network execution functions. The Go engine acts as a Broker, piping data between the three.
 
-### 3. Maximum Capital Cap ($100)
-For the current live testing phase, the absolute maximum capital allocation for the entire system is strictly capped at **$100**.
+### 3. Configurable Global Capital Cap
+For the current live testing phase, the absolute maximum capital allocation for the entire system is configured by default to a conservative **$100** cap. This is fully configurable by the user via the system settings..
 
 ### 4. Asymmetric Risk Ban
 Strategies with unbounded or highly asymmetric downside risk (e.g., betting heavily against low-probability "miracle" outcomes for tiny "Theta decay" gains) are strictly prohibited. 

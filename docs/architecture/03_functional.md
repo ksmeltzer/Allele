@@ -12,7 +12,7 @@
 ## 3. Order Execution (The Trader)
 *   **EIP-712 Order Signing**: The execution service handles EIP-712 order signing on Polygon chain 137. It uses a 2-second expiration to simulate Fill-or-Kill (FOK) and mitigate leg risk.
 *   **HMAC-SHA256 Auth**: The execution service authenticates with the Polymarket CLOB REST API.
-*   **Risk Management**: Stop-losses are mandatory. The maximum possible loss is strictly capped to the allocated capital ("the pot") for that specific trade. The global system maximum cap is $100.
+*   **Risk Management**: Stop-losses are mandatory. The maximum possible loss is strictly capped to the allocated capital ("the pot") for that specific trade. The global system maximum cap defaults to $100 but is configurable.
 *   **Gasless Position Merging**: The execution service uses the Polymarket Relayer API to manage negRisk markets and merge positions.
 
 ## 4. UI & Dashboard (The Radar)

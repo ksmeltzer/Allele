@@ -4,7 +4,18 @@ import (
 	"allele/internal/abi"
 )
 
-type RiskGate struct{}
+type RiskGate struct {
+	MaxCapital float64 // Configurable global capital cap (defaults to 100.0 if not set)
+}
+
+func NewRiskGate(maxCapital float64) *RiskGate {
+	if maxCapital <= 0 {
+		maxCapital = 100.0 // Default fallback
+	}
+	return &RiskGate{
+		MaxCapital: maxCapital,
+	}
+}
 
 func (rg *RiskGate) ValidateSignals(signals []abi.TradeSignal, availableCapital float64) ([]abi.TradeSignal, []string, error) {
 	var validSignals []abi.TradeSignal
@@ -20,9 +31,9 @@ func (rg *RiskGate) ValidateSignals(signals []abi.TradeSignal, availableCapital 
 			rejectionReasons = append(rejectionReasons, "Signal rejected: Exceeds available capital")
 			continue // Reject if exceeds available capital
 		}
-		if cost > 100.0 {
-			rejectionReasons = append(rejectionReasons, "Signal rejected: Exceeds $100 global cap")
-			continue // Enforce the $100 global cap
+		if rg.MaxCapital > 0 && cost > rg.MaxCapital {
+			rejectionReasons = append(rejectionReasons, "Signal rejected: Exceeds global capital cap")
+			continue // Enforce the configurable global cap
 		}
 		validSignals = append(validSignals, sig)
 	}
