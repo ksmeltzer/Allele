@@ -22,3 +22,10 @@ allele_memories.json
 .env
 *.env
 .env.*
+
+# Compiled Binaries
+allele
+arbitrage
+keygen
+watchdog
+*.wasm
