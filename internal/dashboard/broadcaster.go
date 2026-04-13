@@ -3,6 +3,7 @@ package dashboard
 import (
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -26,7 +27,18 @@ func NewBroadcaster() *Broadcaster {
 }
 
 func (b *Broadcaster) Start(port string) {
+	expectedToken := os.Getenv("BROADCASTER_AUTH_TOKEN")
+	if expectedToken == "" {
+		log.Fatalf("BROADCASTER_AUTH_TOKEN must be set in the environment variables")
+	}
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		token := r.URL.Query().Get("auth_token")
+		if token == "" || token != expectedToken {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		conn, err := b.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println("upgrade error:", err)
@@ -52,8 +64,8 @@ func (b *Broadcaster) Start(port string) {
 		}()
 	})
 
-	log.Printf("Starting Broadcaster on port %s", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
+	log.Printf("Starting Broadcaster on localhost:%s", port)
+	if err := http.ListenAndServe("127.0.0.1:"+port, nil); err != nil {
 		log.Fatalf("Broadcaster server failed: %v", err)
 	}
 }
