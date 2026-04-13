@@ -19,3 +19,6 @@ allele_memories.json
 .idea/
 .sessions/
 .obsidian/
+.env
+*.env
+.env.*
