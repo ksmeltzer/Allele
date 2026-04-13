@@ -6,11 +6,18 @@ require (
 	github.com/ethereum/go-ethereum v1.17.2
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
-	github.com/shopspring/decimal v1.4.0
+	github.com/tetratelabs/wazero v1.11.0
 	modernc.org/sqlite v1.48.2
 )
 
 require (
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/spf13/cobra v1.10.2 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+)
+
+require (
+	allele/internal/abi v0.0.0
 	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 // indirect
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/consensys/gnark-crypto v0.18.1 // indirect
@@ -30,3 +37,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
+
+replace allele/internal/abi => ./internal/abi

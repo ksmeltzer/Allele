@@ -1,0 +1,96 @@
+{
+  "id": "03785a8a-6bdb-4bd0-9634-a8baba536e19",
+  "data": "[Architecture: Hybrid Storage Model] High-throughput raw market ticks stream directly to flat JSONL files in `.allele/historical/` (The Firehose). The genetic strategy ledger, trades, and P&L aggregations use a serverless SQLite database (`modernc.org/sqlite` without CGO requirements) located at `.allele/trading.db`."
+}
+{
+  "id": "1efbd897-bf5e-4d43-8cd5-0aab347078d5",
+  "data": "Project constraint: Polymarket backtesting/live-trading engine must be implemented in Go; Python is forbidden for this project (even if globally 'last resort' is allowed elsewhere)."
+}
+{
+  "id": "2bb830de-8f6a-4e77-a72c-86cd80410a50",
+  "data": "[Risks] UMA Oracle disputes present severe capital lockup and resolution inconsistency risks. Avoid taking positions immediately before resolution windows, and implement an OracleMonitor to monitor polygon chain events for challenge periods."
+}
+{
+  "id": "3c2ecbce-960c-4d56-b45d-c29167c9f158",
+  "data": "[Project Namespace & Operations] The project operates entirely within the hidden `.allele` directory for all local data, SQLite DBs, and watchdog binaries. An `allele` CLI script wraps startup, OS integrations (`/etc/hosts`), and browser launching. Use `allele` CLI to interact with the environment, not raw docker/podman commands."
+}
+{
+  "id": "46049474-e28f-43c0-8def-252ba1ea0130",
+  "data": "ARCHITECTURAL CONSTRAINT: The Polymarket CLOB API has no official Go client. A native Go client must be built in internal/polymarket/, using the Rust client (polymarket-rs) as the reference specification. Key concerns: EIP-712 order signing on Polygon chain 137, negRisk flag handling (different collateral mechanics), tick sizes of 0.01 or 0.001, WebSocket streams for real-time data, and REST endpoints for snapshots."
+}
+{
+  "id": "4ee67a60-8eeb-4581-ba37-ab54b3c2fc49",
+  "data": "[Risk Management] Stop-losses are mandatory for all algorithmic trading strategies. The maximum possible loss must be strictly capped to the allocated capital (\"the pot\") for that specific trade. Polymarket's fully collateralized, non-margin market structure mathematically guarantees that a trader can never lose more than the purchase price of their shares."
+}
+{
+  "id": "5b38bc0c-ba43-4f04-86a4-a3067cbc7dfb",
+  "data": "[Architecture: DevOps & Monitoring] Podman is exclusively used for containerization (`podman-compose`). A decoupled native OS Watchdog (`cmd/watchdog`) monitors the trading engine via a TCP IPC socket to prevent silent zombie containers. The Watchdog handles Telegram crash alerts and issues `podman restart` if the socket drops or heartbeats fail. REST polling is strictly prohibited."
+}
+{
+  "id": "5e4f96e8-98d8-4fde-8c34-6150a6a8a831",
+  "data": "ARCHITECTURAL DECISION: The Polymarket trading engine strategy implementation priority is: (0) Completeness Arbitrage as architecture smoke test, (1) Cross-Market Correlation Arbitrage (Strategy D) as primary edge, (2) Time-Decay/Theta, (3) Statistical Mispricing, (4) Behavioral Overreaction, (5) Market Making. Strategy D was selected because its edge is logical/deterministic (not statistical), is backtestable with historical price data alone, and forces the correct multi-book architecture."
+}
+{
+  "id": "6324e6aa-8eaa-48e3-96e1-61190b14560a",
+  "data": "[Architecture: Strategy Optimization] The backtesting engine will include a 'Strategy Arena' utilizing genetic algorithms or competitive tournament models. Strategies will be parameterized (genes) and competed against historical data in parallel using Go routines. The fitness function must heavily penalize max drawdown and asymmetric risk, rewarding stable, fee-adjusted +EV."
+}
+{
+  "id": "69002e5e-b1b6-47d9-b72c-d76bb1fb4aaa",
+  "data": "[Architecture: Microkernel] The system uses a Hexagonal (Ports and Adapters) Microkernel architecture. Core interfaces (`IExchange`, `IWallet`, `IStrategy`, `IEngine`) are completely decoupled. Strategies are pure mathematical functions that evaluate a normalized `MarketState` and output `Action` structs, allowing infinite parallel backtesting and genetic tournament optimization without network calls."
+}
+{
+  "id": "6a228579-0873-4206-8367-1d9e417ed0e3",
+  "data": "[Trading & Risk Rules] Polymarket execution uses EIP-712 signed limit orders and HMAC-SHA256 REST auth. $100 capital cap. Trades mathematically account for a 2% taker fee and enforce a Minimum Net Profit Margin (e.g., 3%). Limit orders use a 2-second expiration to simulate Fill-or-Kill (FOK) and mitigate leg risk. Gasless position merging uses the Polymarket Relayer API."
+}
+{
+  "id": "78e40be9-0ae9-49a6-9e40-eeff6efd1dd9",
+  "data": "The primary programming language for the Allele backtesting engine and data ingestion pipeline is Go (Golang). Python is strictly forbidden, and Go was selected for its high performance, true concurrency (goroutines), and excellent LLM code generation capabilities."
+}
+{
+  "id": "78f2f25e-c54e-4bf1-a61e-5061e1abf63e",
+  "data": "ARCHITECTURAL RULE: Every WASM strategy plugin must have an accompanying theoretical documentation file in the `docs/strategies/` directory. A strategy plugin without a documented mathematical edge is considered a \"black box\" and is strictly prohibited from running in the Allele Engine. The documentation must explain *why* the strategy works independently of *how* it is coded."
+}
+{
+  "id": "98139e4f-16b3-432c-9baa-84cde0a8421a",
+  "data": "ARCHITECTURAL DECISION: Pluggable Strategy Engine via WebAssembly (WASM). Strategies are not hardcoded in the Go binary. Instead, the engine dynamically loads `.wasm` files from the `.allele/strategies/` directory at runtime using the `wazero` pure-Go WASM runtime (maintaining the zero-CGO constraint). This allows strategies to be written in any language (Rust, Go, AssemblyScript), compiled to WASM, and hot-swapped securely without recompiling the core engine or sacrificing execution speed."
+}
+{
+  "id": "accd29ac-5751-4f5e-839d-05181646d070",
+  "data": "[Strategy] Focus on Bayesian Consistency Arbitrage and Cross-Market Correlation Arbitrage as the primary +EV trading strategies on Polymarket, as they rely on mathematical bounds rather than ML forecasting or speed. Completeness Arbitrage will serve as the architectural smoke test."
+}
+{
+  "id": "b509db89-4888-4106-bcb4-7b060a53420d",
+  "data": "[Architecture Pivot: Live Micro-Trading] The requirement for historical backtesting has been officially abandoned due to the lack of public historical APIs. The system is now a Live Micro-Trading Engine. It will operate directly on live WebSocket streams."
+}
+{
+  "id": "b5fc1b3a-4769-4566-b001-4bdfe5c4a803",
+  "data": "[Risk Constraint] The system must absolutely never engage in strategies with unbounded or highly asymmetric downside risk (e.g., 'picking up pennies in front of a steamroller'). Specifically, Time-Decay (Theta) strategies that involve betting heavily against low-probability 'miracle' outcomes for tiny gains are strictly forbidden."
+}
+{
+  "id": "b840369a-a68d-423d-809d-3e3a61042222",
+  "data": "[Risk Constraint: Global Maximum Cap] For the initial live testing phase, the absolute maximum capital allocation for the entire system is strictly capped at $100. Under no circumstances may the system deploy or expose capital beyond this global $100 budget."
+}
+{
+  "id": "bbd41ba4-18d5-42d4-a683-144a64b7170d",
+  "data": "[Architecture Pivot: Live Micro-Trading] The requirement for historical backtesting has been officially abandoned due to the lack of public historical APIs. The system is now a Live Micro-Trading Engine. It will operate directly on live WebSocket streams."
+}
+{
+  "id": "bd159d7a-8172-4640-b4eb-f77f21ed1574",
+  "data": "[Architecture] The backtesting engine must include a pessimistic execution simulator that incorporates Polymarket fee schedules, models queue position (not mid-market fills), and explicitly simulates \"leg risk\" (when one side of an arbitrage fills but the other fails)."
+}
+{
+  "id": "c3475432-d30f-433c-aaaa-e8a9d4552639",
+  "data": "[Architecture: UI & Dashboard] The frontend is a dark-mode React + Vite + Tailwind Single Page Application (SPA) served via an Nginx container. It connects to the Go backend exclusively via a Gorilla WebSocket on port `8081` to display real-time orderbooks, radar updates, and execution feeds. No REST polling is permitted for the UI."
+}
+{
+  "id": "dd8441de-730e-4f65-a163-716e70e907ab",
+  "data": "RISK REGISTER: Polymarket structural risks that must be architecturally addressed: (1) UMA Oracle resolution disputes can freeze positions — engine must enforce mandatory exit windows before resolution. (2) negRisk markets have different collateral mechanics — engine must detect and handle both types. (3) Thin liquidity (<$5K depth in many markets) — backtest execution simulator MUST model market impact, not mid-price fills. (4) Centralized matching engine creates front-running risk. (5) USDC/Polygon bridge risk. (6) API rate limits and potential bans on algorithmic trading. (7) Fee structure changes can flip +EV to -EV."
+}
+{
+  "id": "f8680ac7-846a-4721-9b85-a5f24ee27a57",
+  "data": "ARCHITECTURAL DECISION: Genetic Algorithm (GA) \"Organism\" DNA. A trading \"organism\" (phenotype) is defined as the unique combination of three elements: (1) The WASM Strategy Binary (The \"Species\" logic), (2) The Market/Asset Filters (The \"Habitat\"), and (3) The Tunable Parameters (The \"Genes\"). The GA must enforce \"Ensemble Diversity\" by heavily penalizing highly correlated return streams between top-ranked organisms, ensuring the final portfolio is a basket of uncorrelated alphas rather than 10 slight variations of the same trade."
+}
+{
+  "id": "f900a3a9-9ff4-41cd-a9f1-24d0ee1248b7",
+  "data": "ARCHITECTURAL DECISION: All trading strategies must implement a universal Strategy interface with a pure-function Evaluate(snapshot) method that returns []Signal. Strategies must never place orders directly — signal generation and execution are strictly separated. Each Signal must carry ExpectedEV, Confidence, and Reason fields for auditability. Interface to be defined in internal/strategy/strategy.go."
+}

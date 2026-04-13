@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CausalityTrace from './components/CausalityTrace';
 
 function App() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -38,7 +39,7 @@ function App() {
         <h1 className="text-3xl font-bold text-purple-400">🧬 .allele Strategy Arena</h1>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-wrap lg:flex-nowrap gap-8">
         {/* Left Side: Allele Radar */}
         <div className="flex-1 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-[80vh] overflow-hidden flex flex-col">
           <h2 className="text-xl font-semibold mb-4 text-gray-300">Radar Logs</h2>
@@ -59,6 +60,9 @@ function App() {
             )}
           </div>
         </div>
+
+        {/* Center: Causality Trace */}
+        <CausalityTrace sideliningReasons={[]} />
 
         {/* Right Side: System Health */}
         <div className="w-full lg:w-80 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 h-fit">
