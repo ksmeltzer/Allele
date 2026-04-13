@@ -12,17 +12,18 @@ The Allele UI is the **Global Command Center** for the Tri-Plugin Evolutionary A
 
 ## 2. Core Dashboard Views
 
-### A. The Plugin Manager
-This view parses and displays the contents of `.allele/plugins/<name>/` via the backend WebSocket.
-*   **Exchanges:** Lists loaded Platform adapters (e.g., `polymarket.wasm`, `etrade.wasm`). Displays live WebSocket connection health (Green/Red indicator) and latency to the exchange.
-*   **Sensors:** Lists loaded Data adapters (e.g., `twitter_sentiment.wasm`, `anthropic_llm.wasm`). Displays data-flow rates (e.g., "12 messages/sec" or "Polling every 60s").
-*   **Strategies:** Lists mathematically pure logic modules. The UI parses the Strategy's exported `Manifest` to display a Dependency Graph (e.g., *"Requires: etrade, fda_rss. Status: All Dependencies Met."*).
+### A. The Plugin Manager (Manifest & Dependencies)
+This view manages the contents of the `plugins/` directory via the `/api/plugins` REST endpoints (supplementing the live WebSocket).
+*   **WASM Manifests:** The UI fetches the `abi.Manifest` for every loaded plugin, displaying its type (Exchange, Sensor, Strategy), version, and author.
+*   **Dependency Resolution Graph:** The UI parses the `Dependencies` array in the manifest. It must visually warn the user or block strategy execution if a required exchange or sensor plugin is not currently installed (e.g., *"Requires: allele-exchange-polymarket >= v1.0.0. Status: Missing."*).
+*   **Live Metrics:** Displays WebSocket connection health (Green/Red indicator) and data-flow rates using the `/ws` stream.
 
-### B. The Secure Vault (Account Configuration)
-Because Strategies are pure and stateless, users must configure accounts at the Go Engine level.
-*   **Credential Manager:** Form fields to add API keys for Sensors (e.g., OpenAI, Anthropic) and Exchanges (e.g., Binance API, Polymarket Private Keys).
-*   **Transmission:** Keys entered here are sent immediately over the secure WebSocket to the Go Engine, which encrypts them and stores them in the SQLite `.allele/trading.db`. The UI never caches them locally.
-*   **Global Capital Limits:** Inputs to define the system-wide maximum risk (e.g., "Global Cap: $100").
+### B. Dynamic Configuration & Secure Vault
+Because the engine no longer uses `.env` files for security reasons, all system and plugin configurations are managed dynamically via the UI and stored in the backend SQLite `plugin_config` table.
+*   **Dynamic Forms:** The UI uses the `ConfigField` schema from the `/api/plugins` endpoint to automatically generate configuration forms for each plugin (e.g., text inputs for API keys, toggles for experimental modes).
+*   **Secret Masking:** Fields marked as `Type: "secret"` must be visually masked (`********`) when fetched from the backend.
+*   **Submission:** User inputs are posted to the `/api/plugins/config` endpoint. The Go backend encrypts these secrets and stores them in the SQLite vault.
+*   **Global System Settings:** Inputs to define the system-wide maximum risk (e.g., "Global Cap: $100") and disable the default Asymmetric Risk Ban.
 
 ### C. The Genetic Arena (Leaderboard)
 Replaces standard portfolio views. This tracks the performance of all living "Organisms" (Strategy + Sensors + Exchange + Genetic Parameters).
