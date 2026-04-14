@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <defs>
+    <linearGradient id="matrixGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FF41" />
+      <stop offset="100%" stop-color="#008F11" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Mark: Digital Waveform DNA -->
+  <g transform="translate(15, 20)">
+    <!-- Top dashed wave -->
+    <path d="M 0,40 Q 20,0 40,40 T 80,40" fill="none" stroke="#00FF41" stroke-width="4" stroke-dasharray="6 4" stroke-linecap="round"/>
+    
+    <!-- Bottom dashed wave -->
+    <path d="M 0,40 Q 20,80 40,40 T 80,40" fill="none" stroke="#008F11" stroke-width="4" stroke-dasharray="6 4" stroke-linecap="round"/>
+    
+    <!-- Data links / Rungs -->
+    <line x1="20" y1="20" x2="20" y2="60" stroke="#00FF41" stroke-width="2" stroke-dasharray="2 2"/>
+    <line x1="60" y1="20" x2="60" y2="60" stroke="#00FF41" stroke-width="2" stroke-dasharray="2 2"/>
+    <line x1="40" y1="36" x2="40" y2="44" stroke="#ffffff" stroke-width="4"/>
+    
+    <!-- Nodes -->
+    <circle cx="0" cy="40" r="4" fill="#ffffff"/>
+    <circle cx="80" cy="40" r="4" fill="#ffffff"/>
+  </g>
+
+  <!-- Text -->
+  <text x="120" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="48" font-weight="900" fill="#ffffff" letter-spacing="2">ALLELE</text>
+  <text x="125" y="95" font-family="'Courier New', Courier, monospace" font-size="11" font-weight="bold" fill="#00FF41" letter-spacing="3">DIGITAL GENETICS ENGINE</text>
+</svg>

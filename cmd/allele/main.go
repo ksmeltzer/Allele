@@ -22,6 +22,7 @@ import (
 	"allele/internal/dashboard"
 	"allele/internal/engine"
 	"allele/internal/execution"
+	"allele/internal/plugin"
 	"allele/internal/polymarket"
 	"allele/internal/storage"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -35,6 +36,12 @@ type NewMarketEvent struct {
 
 func main() {
 	initCLI()
+
+	// Initialize Database before loading config
+	if err := storage.InitDB(".allele/trading.db"); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
 	// Load config early for alerting
 	cfg := config.LoadConfig()
 
@@ -91,13 +98,14 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	// Initialize Database
-	if err := storage.InitDB(".allele/trading.db"); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+	// Initialize Plugin Manager
+	pm := plugin.NewManager(".allele/plugins")
+	if err := pm.LoadAll(ctx); err != nil {
+		log.Printf("Failed to load plugins: %v", err)
 	}
 
 	// Initialize Broadcaster
-	broadcaster := dashboard.NewBroadcaster()
+	broadcaster := dashboard.NewBroadcaster(pm)
 	go broadcaster.Start(":8081")
 
 	// Initialize Execution Client

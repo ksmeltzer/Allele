@@ -59,7 +59,8 @@ func Load(ctx context.Context, path string) (*WasmModule, error) {
 	// Prepare wazero configuration
 	modConfig := wazero.NewModuleConfig().
 		WithStdout(os.Stdout).
-		WithStderr(os.Stderr)
+		WithStderr(os.Stderr).
+		WithStartFunctions("_initialize") // WASI reactor mode initialization
 
 	// Mount the plugin's directory so it can access config.yaml at /config
 	modConfig = modConfig.WithFSConfig(config.MountPluginFS(path, "/config"))

@@ -1,0 +1,3 @@
+2026/04/13 20:00:23 Warning: TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID not set in SQLite config. Telegram alerts disabled.
+2026/04/13 20:00:23 Container allele_engine not found, please run installer
+exit status 1

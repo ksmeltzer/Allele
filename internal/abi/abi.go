@@ -10,10 +10,11 @@ type MarketState struct {
 
 // TradeSignal represents the decision output from the WASM plugin.
 type TradeSignal struct {
-	Action     string  `json:"action"`     // e.g., "BUY", "SELL", "HOLD"
-	Confidence float64 `json:"confidence"` // 0.0 to 1.0
-	Size       float64 `json:"size,omitempty"`
-	Price      float64 `json:"price,omitempty"`
+	Action     string                 `json:"action"`     // e.g., "BUY", "SELL", "HOLD"
+	Confidence float64                `json:"confidence"` // 0.0 to 1.0
+	Size       float64                `json:"size,omitempty"`
+	Price      float64                `json:"price,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"` // Arbitrary telemetry to render on the UI
 }
 
 // ConfigField defines a parameter that the plugin requires the user to configure via the UI.

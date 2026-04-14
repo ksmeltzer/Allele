@@ -98,3 +98,20 @@ allele ui
 ---
 
 > **Disclaimer:** This system is for research and educational purposes regarding genetic algorithms and prediction market arbitrage. Usage of real funds carries inherent risk of loss due to market volatility, oracle disputes, smart contract vulnerabilities, and unexpected protocol changes.
+
+## 🧬 The Genetic Algorithm (GA)
+
+Allele is built on the principle that static strategies eventually degrade as market inefficiencies are discovered and closed by competitors. To combat this, the engine employs a continuous **Genetic Algorithm (GA)** to evolve strategies over time.
+
+### The Arena & The Capital Allocator
+Every active WASM plugin combination is treated as an "Organism" (e.g., `Bayesian_Strategy + Polymarket_Exchange + Copilot_Sensor`). The system ranks these organisms on an ongoing basis using risk-adjusted performance metrics, primarily the **Sortino Ratio** (which penalizes downside volatility while ignoring upside volatility).
+
+### Mutation & Crossover
+The engine periodically takes the most profitable organisms and generates "offspring" by mutating their internal configuration parameters. 
+*   **Mutation:** A child organism might run the exact same `allele-strategy-cross-market` logic as its parent, but the GA will slightly adjust its `MIN_SPREAD` config parameter up or down.
+*   **Crossover:** The system can swap data feeds. A strategy relying on `allele-sensor-twitter` might spawn a variant relying on `allele-sensor-copilot` to see if the signal quality improves.
+
+### Ensemble Diversity
+A key risk in automated trading is overfitting to past data. To mitigate this, the Capital Allocator enforces "Ensemble Diversity." It will ruthlessly defund an organism trading on Polymarket if a completely different organism trading on Binance demonstrates a higher Sortino Ratio. The ultimate goal of the GA is not to find one perfect strategy, but to build a global, decentralized basket of uncorrelated alphas.
+
+*(The Allele GA architecture is inspired by neuroevolution topologies like NEAT [Stanley & Miikkulainen, 2002], foundational research in applying evolutionary computation to dynamic financial markets [e.g., Allen & Karjalainen, 1999], and Genetic Programming [Koza, 1992].)*

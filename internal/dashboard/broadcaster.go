@@ -5,71 +5,40 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"allele/internal/abi"
+	"allele/internal/plugin"
 	"allele/internal/storage"
 
 	"github.com/gorilla/websocket"
 )
 
+// WSMessage is the typed envelope for all WebSocket communication (both ways).
+type WSMessage struct {
+	Type    string      `json:"type"`
+	Ts      int64       `json:"ts"`
+	Payload interface{} `json:"payload"`
+}
+
 type Broadcaster struct {
 	conns    map[*websocket.Conn]bool
 	mutex    sync.Mutex
 	upgrader websocket.Upgrader
-	// In a real implementation this would query the loaded WASM modules.
-	// For now, we mock the manifest data for the UI to consume.
-	mockManifests []abi.Manifest
+	pm       *plugin.Manager
 }
 
-func NewBroadcaster() *Broadcaster {
+func NewBroadcaster(pm *plugin.Manager) *Broadcaster {
 	return &Broadcaster{
 		conns: make(map[*websocket.Conn]bool),
 		upgrader: websocket.Upgrader{
+			// In production, we should restrict CheckOrigin to the UI's host.
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
 		},
-		mockManifests: []abi.Manifest{
-			{
-				Name:         "allele-exchange-polymarket",
-				Version:      "v1.0.0",
-				Description:  "Polymarket Exchange Adapter",
-				Author:       "Allele Org",
-				Dependencies: []abi.Dependency{},
-				Config: []abi.ConfigField{
-					{Key: "POLY_API_KEY", Type: "secret", Description: "Polymarket API Key", Required: true},
-					{Key: "POLY_API_SECRET", Type: "secret", Description: "Polymarket API Secret", Required: true},
-					{Key: "POLY_API_PASSPHRASE", Type: "secret", Description: "Polymarket API Passphrase", Required: true},
-				},
-			},
-			{
-				Name:        "allele-strategy-cross-market",
-				Version:     "v1.0.0",
-				Description: "Cross-Market Correlation Arbitrage",
-				Author:      "Allele Org",
-				Dependencies: []abi.Dependency{
-					{Name: "allele-exchange-polymarket", Type: "exchange", Version: ">=v1.0.0", Url: "https://github.com/ksmeltzer/allele-exchange-polymarket/releases/download/v1.0.0/plugin.wasm"},
-				},
-				Config: []abi.ConfigField{
-					{Key: "MIN_SPREAD", Type: "string", Description: "Minimum spread to execute", Required: true},
-					{Key: "EXPERIMENTAL_MODE", Type: "boolean", Description: "Enable risky trades", Required: false},
-				},
-			},
-		},
+		pm: pm,
 	}
-}
-
-func enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (b *Broadcaster) Start(port string) {
@@ -99,99 +68,149 @@ func (b *Broadcaster) Start(port string) {
 		b.conns[conn] = true
 		b.mutex.Unlock()
 
-		go func() {
-			defer func() {
-				b.mutex.Lock()
-				delete(b.conns, conn)
-				b.mutex.Unlock()
-				conn.Close()
-			}()
-			for {
-				if _, _, err := conn.ReadMessage(); err != nil {
-					break
-				}
-			}
-		}()
+		go b.handleConnection(conn)
 	})
 
-	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		// Attach current values from DB to the mock response
-		type ConfigFieldWithValue struct {
-			abi.ConfigField
-			Value string `json:"value"`
-		}
-		type ManifestWithValues struct {
-			abi.Manifest
-			Config []ConfigFieldWithValue `json:"config"`
-		}
-
-		var resp []ManifestWithValues
-		for _, m := range b.mockManifests {
-			var newConfig []ConfigFieldWithValue
-			for _, c := range m.Config {
-				val, _ := storage.GetPluginConfig(m.Name, c.Key)
-				// Mask secret values when sending to frontend
-				if c.Type == "secret" && val != "" {
-					val = "********"
-				}
-				newConfig = append(newConfig, ConfigFieldWithValue{
-					ConfigField: c,
-					Value:       val,
-				})
-			}
-			resp = append(resp, ManifestWithValues{
-				Manifest: m,
-				Config:   newConfig,
-			})
-		}
-
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	mux.HandleFunc("/api/plugins/config", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		var req struct {
-			PluginName string `json:"plugin_name"`
-			Key        string `json:"key"`
-			Value      string `json:"value"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		// If the user submits masked value, ignore it
-		if req.Value == "********" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-
-	log.Printf("Starting Broadcaster (API & WS) on localhost%s", port)
-	if err := http.ListenAndServe("127.0.0.1"+port, enableCORS(mux)); err != nil {
+	log.Printf("Starting Broadcaster (WS only) on 0.0.0.0%s", port)
+	// We no longer need CORS middleware because we removed the REST endpoints.
+	// WebSocket connections handle cross-origin policy via the CheckOrigin function.
+	if err := http.ListenAndServe("0.0.0.0"+port, mux); err != nil {
 		log.Fatalf("Broadcaster server failed: %v", err)
 	}
 }
 
-func (b *Broadcaster) Broadcast(payload interface{}) {
+// Broadcast sends a typed message to all connected clients.
+func (b *Broadcaster) Broadcast(eventType string, payload interface{}) {
+	msg := WSMessage{
+		Type:    eventType,
+		Ts:      time.Now().UnixMilli(),
+		Payload: payload,
+	}
+
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
 	for conn := range b.conns {
-		if err := conn.WriteJSON(payload); err != nil {
+		if err := conn.WriteJSON(msg); err != nil {
 			log.Printf("Broadcast error: %v", err)
 			conn.Close()
 			delete(b.conns, conn)
 		}
 	}
+}
+
+// handleConnection reads incoming messages from the UI and acts upon them.
+func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
+	defer func() {
+		b.mutex.Lock()
+		delete(b.conns, conn)
+		b.mutex.Unlock()
+		conn.Close()
+	}()
+
+	for {
+		var incoming struct {
+			Type    string          `json:"type"`
+			Payload json.RawMessage `json:"payload"`
+		}
+
+		if err := conn.ReadJSON(&incoming); err != nil {
+			break // Connection closed or error
+		}
+
+		switch incoming.Type {
+		case "request_manifests":
+			b.sendManifests(conn)
+
+		case "update_config":
+			var req struct {
+				PluginName string `json:"plugin_name"`
+				Key        string `json:"key"`
+				Value      string `json:"value"`
+			}
+			if err := json.Unmarshal(incoming.Payload, &req); err != nil {
+				b.sendError(conn, "update_config_error", "invalid payload")
+				continue
+			}
+
+			// If the user submits masked value, ignore it
+			if req.Value == "********" {
+				b.sendManifests(conn) // Send fresh state to reset the UI
+				continue
+			}
+
+			// Save to DB
+			if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value); err != nil {
+				b.sendError(conn, "update_config_error", err.Error())
+				continue
+			}
+
+			// Broadcast plugin_status event so all panels know a config changed
+			b.Broadcast("plugin_status", map[string]string{
+				"plugin": req.PluginName,
+				"status": "config_updated",
+			})
+
+			// Send updated manifests back
+			b.sendManifests(conn)
+		}
+	}
+}
+
+// sendManifests retrieves all plugins and their current configurations,
+// masks secrets, and pushes them down the WebSocket connection.
+func (b *Broadcaster) sendManifests(conn *websocket.Conn) {
+	type ConfigFieldWithValue struct {
+		abi.ConfigField
+		Value string `json:"value"`
+	}
+	type ManifestWithValues struct {
+		abi.Manifest
+		Config []ConfigFieldWithValue `json:"config"`
+	}
+
+	var resp []ManifestWithValues
+	var manifests []abi.Manifest
+	if b.pm != nil {
+		manifests = b.pm.GetManifests()
+	}
+
+	for _, m := range manifests {
+		var newConfig []ConfigFieldWithValue
+		for _, c := range m.Config {
+			val, _ := storage.GetPluginConfig(m.Name, c.Key)
+			// Mask secret values when sending to frontend
+			if c.Type == "secret" && val != "" {
+				val = "********"
+			}
+			newConfig = append(newConfig, ConfigFieldWithValue{
+				ConfigField: c,
+				Value:       val,
+			})
+		}
+		resp = append(resp, ManifestWithValues{
+			Manifest: m,
+			Config:   newConfig,
+		})
+	}
+
+	msg := WSMessage{
+		Type:    "manifests_updated",
+		Ts:      time.Now().UnixMilli(),
+		Payload: resp,
+	}
+
+	// Not using b.Broadcast because this is a direct response to one client
+	conn.WriteJSON(msg)
+}
+
+func (b *Broadcaster) sendError(conn *websocket.Conn, errorType string, message string) {
+	msg := WSMessage{
+		Type: errorType,
+		Ts:   time.Now().UnixMilli(),
+		Payload: map[string]string{
+			"error": message,
+		},
+	}
+	conn.WriteJSON(msg)
 }
