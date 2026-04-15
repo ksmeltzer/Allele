@@ -61,7 +61,7 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 
 			newKey, newSecret, newPassphrase, err := execution.GenerateKeysFromWallet(walletAddress, walletPrivKey)
 			if err == nil && newKey != "" {
-				// Store the newly generated keys
+				// Store the newly generated keys under the hood without exposing them in the UI config manifest
 				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY", newKey)
 				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET", newSecret)
 				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_PASSPHRASE", newPassphrase)
@@ -81,6 +81,16 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 				})
 				return
 			}
+		} else {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "warning",
+					"message": "Missing Polygon Wallet credentials. Please configure the plugin.",
+				},
+			})
+			return
 		}
 	}
 
