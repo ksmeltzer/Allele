@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/logo.svg" alt="Allele Logo" width="400">
+  <img src="docs/assets/logo.png" alt="Allele Logo" width="400">
 
   **A Universal Genetic Algorithmic Trading System (ATS).**
   
