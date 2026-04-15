@@ -35,12 +35,12 @@ function ConfigFieldRow({
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={field.type === 'secret' && field.value === '********' ? '********' : 'Enter value...'}
-          className={`flex-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#0052FF]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#0052FF]/50 transition-all font-mono`}
+          className={`flex-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono`}
         />
         <button 
           onClick={() => onSubmit(pluginName, field.key, localValue)}
           disabled={localValue === field.value || localValue === ''}
-          className="px-4 py-1.5 bg-[#0052FF] hover:bg-[#0040C5] disabled:bg-[#2B3139] disabled:text-[#5B616E] text-white text-sm font-medium rounded transition-all duration-200"
+          className="px-4 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] disabled:bg-[#2B3139] disabled:text-[#5B616E] text-white text-sm font-medium rounded transition-all duration-200"
         >
           Save
         </button>
@@ -59,7 +59,7 @@ function ConfigModal({
   onSubmit: (pluginName: string, key: string, value: string) => void 
 }) {
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-[#1B2028] border border-[#2B3139] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-[#2B3139] flex items-center justify-between bg-[#1B2028]">
           <div className="flex items-center space-x-3">
@@ -265,25 +265,21 @@ export default function PluginManager({
                   return (
                     <div 
                       key={plugin.name} 
-                      onClick={() => setConfiguringPlugin(plugin)}
-                      className="group flex items-center p-2 rounded hover:bg-[#2B3139] cursor-pointer transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfiguringPlugin(plugin);
+                      }}
+                      className="group flex items-center p-2 rounded hover:bg-[#2B3139] cursor-pointer transition-colors relative z-10"
                       title={hasError ? "Plugin needs configuration or dependencies" : "Plugin is ready"}
                     >
-                      {/* Fixed width container for left-aligned status indicator */}
-                      <div className="w-5 flex justify-center shrink-0">
+                      {/* Left-aligned status indicator */}
+                      <div className="w-6 flex items-center justify-center shrink-0">
                         <div 
-                          className={hasError ? 'animate-[pulse_1.5s_ease-in-out_infinite]' : ''}
-                          style={{
-                            width: '8px', 
-                            height: '8px', 
-                            borderRadius: '50%',
-                            backgroundColor: hasError ? '#FB3836' : '#00C087',
-                            boxShadow: hasError ? '0 0 8px rgba(251,56,54,0.8)' : '0 0 8px rgba(0,192,135,0.5)'
-                          }}
+                          className={`w-2 h-2 rounded-full ${hasError ? 'bg-[#FB3836] shadow-[0_0_8px_rgba(251,56,54,0.8)] animate-pulse' : 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]'}`}
                         ></div>
                       </div>
                       
-                      <span className={`text-[13px] font-medium ml-2 truncate transition-colors ${hasError ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
+                      <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${hasError ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
                         {plugin.name}
                       </span>
                       

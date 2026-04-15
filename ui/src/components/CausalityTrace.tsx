@@ -23,7 +23,7 @@ export default function CausalityTrace() {
           </div>
         ) : (
           events.map((ev, index) => (
-            <div key={index} className="p-3 rounded bg-[#2B3139]/30 border-l-2 border-[#0052FF] flex flex-col space-y-2">
+            <div key={index} className="p-3 rounded bg-[#2B3139]/30 border-l-2 border-[#4F46E5] flex flex-col space-y-2">
               <div className="text-[#A6B0C3] text-[10px] uppercase font-bold tracking-wider flex justify-between">
                 <span>EVALUATION DAG</span>
                 <span>{ev.timestamp.toLocaleTimeString()}</span>

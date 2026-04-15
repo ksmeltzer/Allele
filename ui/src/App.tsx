@@ -61,7 +61,7 @@ const FirehosePanel = () => {
           logs.map((log, i) => (
             <div key={i} className="pl-3 border-l-2 py-1 border-[#2B3139] hover:bg-[#2B3139]/30 text-[#E2E8F0] transition-colors rounded-r">
               <span className="text-[#5B616E] mr-3">[{log.timestamp.toLocaleTimeString()}]</span>
-              <span className={`font-bold mr-2 ${log.type === 'tick' ? 'text-[#00C087]' : log.type === 'health' ? 'text-[#0052FF]' : 'text-[#FB3836]'}`}>
+              <span className={`font-bold mr-2 ${log.type === 'tick' ? 'text-[#00C087]' : log.type === 'health' ? 'text-[#4F46E5]' : 'text-[#FB3836]'}`}>
                 [{log.type.toUpperCase()}]
               </span>
               <span className="break-all opacity-80">{JSON.stringify(log, (k,v) => k === 'type' || k === 'timestamp' ? undefined : v)}</span>
@@ -172,12 +172,12 @@ function App() {
       <header className="bg-[#0B0E11] border-b border-[#2B3139] px-6 py-3 flex items-center justify-between shrink-0 z-50">
         <div className="flex items-center space-x-6">
           <div className="flex items-center space-x-3">
-            <PulseIcon sx={{ color: '#0052FF' }} />
+            <PulseIcon sx={{ color: '#4F46E5' }} />
             <h1 className="text-[15px] font-bold tracking-wide text-white">Allele <span className="font-normal text-[#A6B0C3]">Advanced</span></h1>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6 text-[13px] font-medium text-[#A6B0C3]">
-            <a href="#" className="text-white border-b-2 border-[#0052FF] pb-1 hover:text-white transition-colors">Trade Engine</a>
+            <a href="#" className="text-white border-b-2 border-[#4F46E5] pb-1 hover:text-white transition-colors">Trade Engine</a>
             <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Portfolios</a>
             <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Risk Limits</a>
           </nav>

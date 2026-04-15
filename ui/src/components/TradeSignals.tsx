@@ -29,7 +29,7 @@ export default function TradeSignals() {
         ) : (
           signals.map((sig, i) => (
             <div key={i} className={`p-2 rounded border-l-2 flex flex-col space-y-1 ${
-              sig.type === 'tick' ? 'bg-[#00C087]/10 border-[#00C087] text-[#00C087]' : 'bg-[#0052FF]/10 border-[#0052FF] text-[#0052FF]'
+              sig.type === 'tick' ? 'bg-[#00C087]/10 border-[#00C087] text-[#00C087]' : 'bg-[#4F46E5]/10 border-[#4F46E5] text-[#4F46E5]'
             }`}>
               <div className="flex justify-between items-center opacity-80 text-[10px]">
                 <span className="font-bold uppercase">{sig.type}</span>
