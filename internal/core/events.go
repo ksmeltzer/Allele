@@ -4,7 +4,7 @@ type EventType string
 
 const (
 	ConfigUpdatedEvent EventType = "config_updated"
-	SystemAlertEvent   EventType = "system_alert"
+	SystemAlertEvent   EventType = "health"
 )
 
 type Event struct {
