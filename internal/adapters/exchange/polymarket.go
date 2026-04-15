@@ -4,24 +4,81 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
 	"allele/internal/core"
 	"allele/internal/execution"
 	"allele/internal/polymarket"
+	"allele/internal/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type PolymarketExchange struct {
 	wsClient   *polymarket.WsClient
 	restClient *execution.Client
+	eventBus   *core.EventBus
 }
 
-func NewPolymarketExchange(ws *polymarket.WsClient, rest *execution.Client) *PolymarketExchange {
-	return &PolymarketExchange{
+func NewPolymarketExchange(ws *polymarket.WsClient, rest *execution.Client, eventBus *core.EventBus) *PolymarketExchange {
+	p := &PolymarketExchange{
 		wsClient:   ws,
 		restClient: rest,
+		eventBus:   eventBus,
+	}
+
+	if eventBus != nil {
+		go p.listenForConfig()
+	}
+
+	return p
+}
+
+func (p *PolymarketExchange) listenForConfig() {
+	ch := p.eventBus.Subscribe(core.ConfigUpdatedEvent)
+	for event := range ch {
+		payload, ok := event.Payload.(map[string]string)
+		if !ok || payload["plugin_name"] != "allele-exchange-polymarket" {
+			continue
+		}
+
+		log.Println("PolymarketExchange: Config updated, re-initializing credentials...")
+
+		key, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY")
+		secret, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET")
+		passphrase, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLY_API_PASSPHRASE")
+
+		p.restClient = execution.NewClient(key, secret, passphrase)
+
+		if key == "" || secret == "" {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "warning",
+					"message": "Missing Polymarket credentials. Orders will fail.",
+				},
+			})
+		} else if len(key) < 10 { // naive junk check
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "error",
+					"message": "Invalid Polymarket API Key format detected. Connection will fail.",
+				},
+			})
+		} else {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "info",
+					"message": "Polymarket credentials updated successfully.",
+				},
+			})
+		}
 	}
 }
 

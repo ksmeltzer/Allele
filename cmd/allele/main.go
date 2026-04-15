@@ -104,8 +104,11 @@ func main() {
 		log.Printf("Failed to load plugins: %v", err)
 	}
 
+	// Microkernel Setup
+	kernel := engine.NewKernel()
+
 	// Initialize Broadcaster
-	broadcaster := dashboard.NewBroadcaster(pm)
+	broadcaster := dashboard.NewBroadcaster(pm, kernel.EventBus)
 	go broadcaster.Start(":8081")
 
 	// Initialize Execution Client
@@ -125,14 +128,11 @@ func main() {
 		privateKey = pk
 	}
 
-	// Microkernel Setup
-	kernel := engine.NewKernel()
-
 	polygonWallet := wallet.NewPolygonWallet(privateKey)
 	kernel.RegisterWallet(polygonWallet)
 
 	wsClient := polymarket.NewWsClient(polymarket.DefaultWSEndpoint)
-	polymarketExchange := exchange.NewPolymarketExchange(wsClient, execClient)
+	polymarketExchange := exchange.NewPolymarketExchange(wsClient, execClient, kernel.EventBus)
 	kernel.RegisterExchange(polymarketExchange)
 
 	takerFee := 0.02

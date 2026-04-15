@@ -19,6 +19,7 @@ type Kernel struct {
 	monitor     *health.Monitor
 	arena       *arena.Arena
 	sidelined   map[string]bool
+	EventBus    *core.EventBus
 }
 
 func NewKernel() *Kernel {
@@ -31,6 +32,7 @@ func NewKernel() *Kernel {
 		},
 		tickChan:  make(chan core.NormalizedTick, 1000),
 		sidelined: make(map[string]bool),
+		EventBus:  core.NewEventBus(),
 	}
 }
 

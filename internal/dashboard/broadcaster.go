@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"allele/internal/abi"
+	"allele/internal/core"
 	"allele/internal/plugin"
 	"allele/internal/storage"
 
@@ -27,10 +28,11 @@ type Broadcaster struct {
 	mutex    sync.Mutex
 	upgrader websocket.Upgrader
 	pm       *plugin.Manager
+	eventBus *core.EventBus
 }
 
-func NewBroadcaster(pm *plugin.Manager) *Broadcaster {
-	return &Broadcaster{
+func NewBroadcaster(pm *plugin.Manager, eventBus *core.EventBus) *Broadcaster {
+	b := &Broadcaster{
 		conns: make(map[*websocket.Conn]bool),
 		upgrader: websocket.Upgrader{
 			// In production, we should restrict CheckOrigin to the UI's host.
@@ -38,7 +40,21 @@ func NewBroadcaster(pm *plugin.Manager) *Broadcaster {
 				return true
 			},
 		},
-		pm: pm,
+		pm:       pm,
+		eventBus: eventBus,
+	}
+
+	if eventBus != nil {
+		go b.listenEventBus()
+	}
+
+	return b
+}
+
+func (b *Broadcaster) listenEventBus() {
+	ch := b.eventBus.Subscribe(core.SystemAlertEvent)
+	for event := range ch {
+		b.Broadcast(string(event.Type), event.Payload)
 	}
 }
 
@@ -179,6 +195,16 @@ func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
 				"plugin": req.PluginName,
 				"status": "config_updated",
 			})
+
+			// Publish to internal EventBus so adapters can reload
+			if b.eventBus != nil {
+				b.eventBus.Publish(core.Event{
+					Type: core.ConfigUpdatedEvent,
+					Payload: map[string]string{
+						"plugin_name": req.PluginName,
+					},
+				})
+			}
 
 			// Send updated manifests back
 			b.sendManifests(conn)
