@@ -27,6 +27,10 @@ func InitDB(dbPath string) error {
 		return fmt.Errorf("failed to create tables: %w", err)
 	}
 
+	if err := InitCrypto(dbPath); err != nil {
+		return fmt.Errorf("failed to initialize encryption layer: %w", err)
+	}
+
 	return nil
 }
 
@@ -84,11 +88,21 @@ func GetPluginConfig(pluginName, key string) (string, error) {
 		}
 		return "", err
 	}
+	decrypted, err := DecryptSecret(val)
+	if err == nil {
+		return decrypted, nil
+	}
 	return val, nil
 }
 
 // SetPluginConfig stores a UI-collected parameter into the database.
-func SetPluginConfig(pluginName, key, value string) error {
+func SetPluginConfig(pluginName, key, value string, isSecret bool) error {
+	if isSecret {
+		enc, err := EncryptSecret(value)
+		if err == nil {
+			value = enc
+		}
+	}
 	query := `INSERT INTO plugin_config (plugin_name, key, value) 
 		VALUES (?, ?, ?) 
 		ON CONFLICT(plugin_name, key) DO UPDATE SET value=excluded.value;`

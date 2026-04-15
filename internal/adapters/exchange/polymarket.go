@@ -62,9 +62,9 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 			newKey, newSecret, newPassphrase, err := execution.GenerateKeysFromWallet(walletAddress, walletPrivKey)
 			if err == nil && newKey != "" {
 				// Store the newly generated keys under the hood without exposing them in the UI config manifest
-				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY", newKey)
-				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET", newSecret)
-				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_PASSPHRASE", newPassphrase)
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY", newKey, true)
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET", newSecret, true)
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_PASSPHRASE", newPassphrase, true)
 
 				// Update the local instance variables so the next ping works
 				p.restClient = execution.NewClient(newKey, newSecret, newPassphrase)

@@ -3,8 +3,8 @@ package config
 import (
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
 	"allele/internal/storage"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Config represents the system-wide configuration loaded dynamically from SQLite and the Secure Vault.
@@ -45,7 +45,9 @@ func LoadConfig() *Config {
 	// (Note: To fetch from Vault we need the vault instance, but for now we
 	//  will just initialize empty string for secrets here; the Engine/Adapters
 	//  will fetch directly from the Vault during execution, rather than global config).
-	var privKey, polyApiKey, polyApiSecret, polyApiPassphrase, relayerApiKey string
+	var polyApiKey, polyApiSecret, polyApiPassphrase, relayerApiKey string
+
+	privKey, _ := storage.GetPluginConfig("system", "POLYGON_PRIVATE_KEY")
 
 	return &Config{
 		PolygonPrivateKey:  privKey,

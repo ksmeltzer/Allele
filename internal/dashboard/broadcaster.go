@@ -62,7 +62,7 @@ func (b *Broadcaster) Start(port string) {
 	expectedToken, _ := storage.GetPluginConfig("system", "BROADCASTER_AUTH_TOKEN")
 	if expectedToken == "" {
 		expectedToken = "dev-token" // Fallback for dev mode
-		storage.SetPluginConfig("system", "BROADCASTER_AUTH_TOKEN", expectedToken)
+		storage.SetPluginConfig("system", "BROADCASTER_AUTH_TOKEN", expectedToken, true)
 		log.Printf("Warning: BROADCASTER_AUTH_TOKEN not set. Defaulting to 'dev-token'")
 	}
 
@@ -185,7 +185,22 @@ func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
 			}
 
 			// Save to DB
-			if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value); err != nil {
+			isSecret := false
+			if b.pm != nil {
+				for _, m := range b.pm.GetManifests() {
+					if m.Name == req.PluginName {
+						for _, c := range m.Config {
+							if c.Key == req.Key && c.Type == "secret" {
+								isSecret = true
+								break
+							}
+						}
+					}
+				}
+			}
+
+			// Save to DB
+			if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value, isSecret); err != nil {
 				b.sendError(conn, "update_config_error", err.Error())
 				continue
 			}

@@ -136,8 +136,8 @@ func main() {
 	}
 
 	// Store non-secrets in standard config
-	storage.SetPluginConfig("system", "PUBLIC_ADDRESS", address)
-	storage.SetPluginConfig("system", "POLYGON_PRIVATE_KEY", privKeyHex) // The engine requires this to sign trades later
+	storage.SetPluginConfig("system", "PUBLIC_ADDRESS", address, false)
+	storage.SetPluginConfig("system", "POLYGON_PRIVATE_KEY", privKeyHex, true) // The engine requires this to sign trades later
 
 	// Store API keys securely in the Vault
 	vaultKeyBytes, err := crypto.HexToECDSA(vaultKeyHex)
