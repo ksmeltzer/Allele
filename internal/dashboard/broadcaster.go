@@ -184,8 +184,14 @@ func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
 				continue
 			}
 
+			// Special case routing for the hardcoded system core manifest
+			savePluginName := req.PluginName
+			if req.PluginName == "allele-core-system" {
+				savePluginName = "system"
+			}
+
 			// Save to DB
-			if err := storage.SetPluginConfig(req.PluginName, req.Key, req.Value); err != nil {
+			if err := storage.SetPluginConfig(savePluginName, req.Key, req.Value); err != nil {
 				b.sendError(conn, "update_config_error", err.Error())
 				continue
 			}
@@ -201,7 +207,7 @@ func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
 				b.eventBus.Publish(core.Event{
 					Type: core.ConfigUpdatedEvent,
 					Payload: map[string]string{
-						"plugin_name": req.PluginName,
+						"plugin_name": savePluginName,
 					},
 				})
 			}
@@ -230,10 +236,28 @@ func (b *Broadcaster) sendManifests(conn *websocket.Conn) {
 		manifests = b.pm.GetManifests()
 	}
 
+	// Inject the Core System configuration manifest for the UI
+	manifests = append(manifests, abi.Manifest{
+		Name:        "allele-core-system",
+		Version:     "v1.0.0",
+		Description: "Core System Wallet & Global Configuration",
+		Author:      "Allele",
+		Config: []abi.ConfigField{
+			{Key: "POLYGON_PRIVATE_KEY", Type: "secret", Description: "Polygon Wallet Private Key (Hex)", Required: true},
+			{Key: "PUBLIC_ADDRESS", Type: "string", Description: "Polygon Public Wallet Address (0x...)", Required: true},
+			{Key: "MIN_NET_PROFIT_MARGIN", Type: "string", Description: "Minimum % Profit required to fire an arbitrage trade (e.g. 0.03 for 3%)", Required: false},
+		},
+	})
+
 	for _, m := range manifests {
 		var newConfig []ConfigFieldWithValue
+		lookupName := m.Name
+		if m.Name == "allele-core-system" {
+			lookupName = "system"
+		}
+
 		for _, c := range m.Config {
-			val, _ := storage.GetPluginConfig(m.Name, c.Key)
+			val, _ := storage.GetPluginConfig(lookupName, c.Key)
 			// Mask secret values when sending to frontend
 			if c.Type == "secret" && val != "" {
 				val = "********"
