@@ -114,7 +114,7 @@ func main() {
 
 	// Initialize Broadcaster
 	broadcaster := dashboard.NewBroadcaster(pm, kernel.EventBus)
-	go broadcaster.Start(":8081")
+	go broadcaster.Start(":8082")
 
 	// Initialize Execution Client
 	execClient := execution.NewClient(cfg.PolyApiKey, cfg.PolyApiSecret, cfg.PolyApiPassphrase)

@@ -26,7 +26,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     const connectWS = () => {
       // In dev mode or production, use standard token (hardcoded fallback for now)
       const token = 'dev-token';
-      const wsUrl = `ws://${window.location.hostname}:8081/ws?auth_token=${token}`;
+      const wsUrl = `ws://${window.location.hostname}:8082/ws?auth_token=${token}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
