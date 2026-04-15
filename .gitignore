@@ -34,3 +34,8 @@ backend.log
 frontend.log
 .sessions/
 watchdog.log
+CLAUDE.md
+AGENTS.md
+ARC-REVIEW*
+.beads/
+.claude/
