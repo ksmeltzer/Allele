@@ -11,6 +11,7 @@ import IconButton from '@mui/material/IconButton';
 // Material UI Icons
 import SettingsIcon from '@mui/icons-material/Settings';
 import PulseIcon from '@mui/icons-material/WifiTethering'; // Custom stand-in for pulse
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import WarningIcon from '@mui/icons-material/WarningAmber';
 
 import CausalityTrace from './components/CausalityTrace';
@@ -21,6 +22,7 @@ import RiskConstraints from './components/RiskConstraints';
 const GlobalStatusIndicators = () => {
   const { subscribe, sendEvent, connected } = useWebSocket();
   const [plugins, setPlugins] = useState<Manifest[]>([]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribe('manifests_updated', (payload: Manifest[]) => {
@@ -39,21 +41,45 @@ const GlobalStatusIndicators = () => {
   if (pluginsNeedingConfig.length === 0) return null;
 
   return (
-    <div className="flex items-center space-x-2 mr-4">
-      {pluginsNeedingConfig.map(p => (
-        <button
-          key={`alert-${p.name}`}
-          // We can't easily open the modal from here without global state, 
-          // but we can dispatch a custom DOM event that PluginManager can listen for.
-          onClick={() => {
-            document.dispatchEvent(new CustomEvent('open-plugin-config', { detail: p }));
-          }}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-900/40 border border-yellow-700/50 rounded hover:bg-yellow-900/60 transition-colors text-yellow-500 text-xs font-bold"
-        >
-          <WarningIcon fontSize="inherit" />
-          <span>{p.name} NEEDS CONFIG</span>
-        </button>
-      ))}
+    <div className="relative flex items-center mr-4">
+      <IconButton 
+        onClick={() => setOpen(!open)}
+        sx={{ color: '#A6B0C3', '&:hover': { color: 'white' } }}
+      >
+        <div className="relative">
+          <NotificationsIcon />
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500 border border-[#0B0E11]"></span>
+          </span>
+        </div>
+      </IconButton>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-64 bg-[#1B2028] border border-[#2B3139] rounded shadow-xl z-50 overflow-hidden">
+          <div className="px-4 py-2 bg-[#11141A] border-b border-[#2B3139] text-xs font-bold text-[#A6B0C3] uppercase tracking-wider">
+            Action Required
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {pluginsNeedingConfig.map(p => (
+              <button
+                key={`alert-${p.name}`}
+                onClick={() => {
+                  document.dispatchEvent(new CustomEvent('open-plugin-config', { detail: p }));
+                  setOpen(false);
+                }}
+                className="w-full flex items-start space-x-3 px-4 py-3 hover:bg-[#2B3139] transition-colors text-left"
+              >
+                <WarningIcon sx={{ color: '#EAB308', fontSize: 20 }} />
+                <div>
+                  <div className="text-sm font-medium text-white">{p.name}</div>
+                  <div className="text-xs text-[#A6B0C3] mt-0.5">Needs configuration before it can run.</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

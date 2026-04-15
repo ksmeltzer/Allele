@@ -20,7 +20,8 @@ type TradeSignal struct {
 // ConfigField defines a parameter that the plugin requires the user to configure via the UI.
 type ConfigField struct {
 	Key         string `json:"key"`
-	Type        string `json:"type"` // "string", "int", "boolean", "secret"
+	Title       string `json:"title"` // New: UI Title
+	Type        string `json:"type"`  // "string", "int", "boolean", "secret"
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 }

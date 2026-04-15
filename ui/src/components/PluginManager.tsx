@@ -23,9 +23,19 @@ function ConfigFieldRow({
 
   return (
     <div className="flex flex-col space-y-1.5 mb-4">
-      <label className="text-[12px] font-medium text-[#A6B0C3] flex items-center">
-        {field.key} {field.required && <span className="text-[#FB3836] ml-1">*</span>}
-        <span className="ml-2 font-normal text-[#5B616E]">- {field.description}</span>
+      <label className="text-[13px] font-medium text-[#E2E8F0] flex items-center justify-between">
+        <div className="flex items-center group relative cursor-help">
+          <span>{field.title || field.key}</span>
+          {field.required && <span className="text-[#FB3836] ml-1">*</span>}
+          <InfoIcon sx={{ fontSize: 14, ml: 1, color: '#5B616E', '&:hover': { color: '#A6B0C3' } }} />
+          
+          {/* Tooltip */}
+          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 bg-[#2B3139] text-[#E2E8F0] text-xs p-2 rounded shadow-lg border border-[#3A414A] z-50">
+            <div className="font-mono text-[10px] text-[#A6B0C3] mb-1">{field.key}</div>
+            {field.description}
+            <div className="absolute -bottom-1 left-4 w-2 h-2 bg-[#2B3139] border-b border-r border-[#3A414A] transform rotate-45"></div>
+          </div>
+        </div>
       </label>
       <input
         type={field.type === 'secret' ? 'password' : 'text'}

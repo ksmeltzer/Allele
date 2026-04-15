@@ -1,5 +1,6 @@
 export interface ConfigField {
   key: string;
+  title?: string;
   type: string;
   description: string;
   required: boolean;
