@@ -63,14 +63,27 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 			},
 		})
 	} else {
-		p.eventBus.Publish(core.Event{
-			Type: core.SystemAlertEvent,
-			Payload: map[string]interface{}{
-				"source":  "allele-exchange-polymarket",
-				"level":   "info",
-				"message": "Polymarket credentials verified.",
-			},
-		})
+		// Ping the Polymarket API to verify the credentials actually work
+		err := p.restClient.PingAuth()
+		if err != nil {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "error",
+					"message": fmt.Sprintf("Polymarket authentication failed: %v", err),
+				},
+			})
+		} else {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "info",
+					"message": "Polymarket credentials verified and connected.",
+				},
+			})
+		}
 	}
 }
 

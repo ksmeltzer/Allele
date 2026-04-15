@@ -91,3 +91,44 @@ func (c *Client) PlaceOrder(order *Order, signature string) error {
 
 	return nil
 }
+
+// PingAuth checks if the configured API credentials are valid
+func (c *Client) PingAuth() error {
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	method := http.MethodGet
+	requestPath := "/auth" // Polymarket CLOB has an /auth endpoint for checking credentials
+	message := timestamp + method + requestPath
+
+	decodedSecret, err := base64.StdEncoding.DecodeString(c.apiSecret)
+	if err != nil {
+		return fmt.Errorf("failed to decode api secret: %w", err)
+	}
+
+	h := hmac.New(sha256.New, decodedSecret)
+	h.Write([]byte(message))
+	apiSignature := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	reqURL := fmt.Sprintf("%s%s", c.endpoint, requestPath)
+	req, err := http.NewRequest(method, reqURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("POLY-API-KEY", c.apiKey)
+	req.Header.Set("POLY-API-SIGNATURE", apiSignature)
+	req.Header.Set("POLY-API-TIMESTAMP", timestamp)
+	req.Header.Set("POLY-API-PASSPHRASE", c.apiPassphrase)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API returned non-200 status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
