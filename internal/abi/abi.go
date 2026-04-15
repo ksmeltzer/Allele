@@ -19,11 +19,15 @@ type TradeSignal struct {
 
 // ConfigField defines a parameter that the plugin requires the user to configure via the UI.
 type ConfigField struct {
-	Key         string `json:"key"`
-	Title       string `json:"title"` // New: UI Title
-	Type        string `json:"type"`  // "string", "int", "boolean", "secret"
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
+	Key          string   `json:"key"`
+	Title        string   `json:"title"` // New: UI Title
+	Type         string   `json:"type"`  // "string", "number", "boolean", "secret", "enum"
+	Description  string   `json:"description"`
+	Explanation  string   `json:"explanation,omitempty"`  // Deep dive explanation for tooltips
+	DefaultValue string   `json:"defaultValue,omitempty"` // Default value
+	Required     bool     `json:"required"`
+	Options      []string `json:"options,omitempty"`     // Allowed values if type == "enum"
+	MultiSelect  bool     `json:"multiSelect,omitempty"` // If true and type == "enum", allow multiple values
 }
 
 // Dependency defines another plugin that this plugin requires to function.

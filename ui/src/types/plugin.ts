@@ -1,9 +1,13 @@
 export interface ConfigField {
   key: string;
   title?: string;
-  type: string;
+  type: string; // 'string' | 'number' | 'boolean' | 'secret' | 'enum'
   description: string;
+  explanation?: string;
+  defaultValue?: string;
   required: boolean;
+  options?: string[];
+  multiSelect?: boolean;
   value?: string;
 }
 

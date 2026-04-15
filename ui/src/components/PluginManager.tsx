@@ -20,30 +20,112 @@ function ConfigFieldRow({
   onChange: (val: string) => void 
 }) {
   const needsConfig = field.required && (!value || value === '');
+  const currentValue = value || field.defaultValue || '';
 
-  return (
-    <div className="flex flex-col space-y-1.5 mb-4">
-      <label className="text-[13px] font-medium text-[#E2E8F0] flex items-center justify-between">
-        <div className="flex items-center group relative cursor-help">
-          <span>{field.title || field.key}</span>
-          {field.required && <span className="text-[#FB3836] ml-1">*</span>}
-          <InfoIcon sx={{ fontSize: 14, ml: 1, color: '#5B616E', '&:hover': { color: '#A6B0C3' } }} />
-          
-          {/* Tooltip */}
-          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 bg-[#2B3139] text-[#E2E8F0] text-xs p-2 rounded shadow-lg border border-[#3A414A] z-50">
-            <div className="font-mono text-[10px] text-[#A6B0C3] mb-1">{field.key}</div>
-            {field.description}
-            <div className="absolute -bottom-1 left-4 w-2 h-2 bg-[#2B3139] border-b border-r border-[#3A414A] transform rotate-45"></div>
+  const renderInput = () => {
+    if (field.type === 'boolean') {
+      return (
+        <label className="relative inline-flex items-center cursor-pointer mt-1">
+          <input 
+            type="checkbox" 
+            className="sr-only peer" 
+            checked={currentValue === 'true'} 
+            onChange={e => onChange(e.target.checked ? 'true' : 'false')} 
+          />
+          <div className="w-9 h-5 bg-[#2B3139] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#A6B0C3] peer-checked:after:bg-white after:border-[#3A414A] after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4F46E5]"></div>
+          <span className={`ml-3 text-sm font-medium ${currentValue === 'true' ? 'text-white' : 'text-[#A6B0C3]'}`}>
+            {currentValue === 'true' ? 'Enabled' : 'Disabled'}
+          </span>
+        </label>
+      );
+    }
+
+    if (field.type === 'enum' && field.options) {
+      if (field.multiSelect) {
+        // Multi-select simplified for env injection: comma separated string
+        const selected = currentValue ? currentValue.split(',') : [];
+        const toggleSelection = (opt: string) => {
+          if (selected.includes(opt)) {
+            onChange(selected.filter(i => i !== opt).join(','));
+          } else {
+            onChange([...selected, opt].join(','));
+          }
+        };
+        return (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {field.options.map(opt => {
+              const isSelected = selected.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => toggleSelection(opt)}
+                  className={`px-3 py-1 text-xs rounded border transition-colors ${
+                    isSelected 
+                      ? 'bg-[#4F46E5]/20 border-[#4F46E5] text-[#4F46E5] font-bold' 
+                      : 'bg-[#0B0E11] border-[#2B3139] text-[#A6B0C3] hover:border-[#4F46E5]/50'
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </label>
+        );
+      }
+
+      // Single select
+      return (
+        <select
+          value={currentValue}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full mt-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono appearance-none`}
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%235B616E' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: `2.5rem` }}
+        >
+          <option value="" disabled>Select an option...</option>
+          {field.options.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+      );
+    }
+
+    // Default string / number / secret
+    return (
       <input
-        type={field.type === 'secret' ? 'password' : 'text'}
-        value={value}
+        type={field.type === 'secret' ? 'password' : field.type === 'number' ? 'number' : 'text'}
+        value={currentValue}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.type === 'secret' && field.value === '********' ? '********' : 'Enter value...'}
-        className={`w-full bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono`}
+        className={`w-full mt-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono`}
       />
+    );
+  };
+
+  return (
+    <div className="flex flex-col mb-5">
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[13px] font-medium text-[#E2E8F0] flex items-center">
+          <div className="flex items-center group relative cursor-help">
+            <span>{field.title || field.key}</span>
+            {field.required && <span className="text-[#FB3836] ml-1">*</span>}
+            {(field.explanation || field.description) && (
+              <>
+                <InfoIcon sx={{ fontSize: 14, ml: 1, color: '#5B616E', '&:hover': { color: '#A6B0C3' } }} />
+                {/* Tooltip */}
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 bg-[#2B3139] text-[#E2E8F0] text-xs p-3 rounded shadow-xl border border-[#3A414A] z-50 leading-relaxed font-normal normal-case">
+                  <div className="font-mono text-[10px] text-[#A6B0C3] mb-2 uppercase tracking-wider">{field.key}</div>
+                  {field.explanation || field.description}
+                  <div className="absolute -bottom-1 left-4 w-2 h-2 bg-[#2B3139] border-b border-r border-[#3A414A] transform rotate-45"></div>
+                </div>
+              </>
+            )}
+          </div>
+        </label>
+        {field.defaultValue && <span className="text-[10px] text-[#5B616E] font-mono">Default: {field.defaultValue}</span>}
+      </div>
+      <div className="text-xs text-[#8A94A6] mb-2">{field.description}</div>
+      {renderInput()}
     </div>
   );
 }
