@@ -139,6 +139,14 @@ func main() {
 	minProfitMargin := cfg.MinNetProfitMargin
 	completenessStrategy := strategy.NewCompletenessArbitrage(takerFee, minProfitMargin, kernel.EventBus)
 	kernel.RegisterStrategy(completenessStrategy)
+	// Dynamically load WASM strategies that export Evaluate
+	for name, mod := range pm.GetModules() {
+		if mod.Module.ExportedFunction("Evaluate") != nil {
+			wasmStrat := strategy.NewWasmStrategy(name, mod)
+			kernel.RegisterStrategy(wasmStrat)
+			log.Printf("Registered WASM strategy: %s", name)
+		}
+	}
 
 	go kernel.Start(ctx)
 

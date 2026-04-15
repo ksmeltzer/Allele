@@ -191,3 +191,7 @@ func (m *Manager) GetManifests() []abi.Manifest {
 	}
 	return list
 }
+
+func (m *Manager) GetModules() map[string]*loader.WasmModule {
+	return m.modules
+}
