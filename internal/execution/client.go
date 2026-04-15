@@ -150,7 +150,7 @@ func GenerateKeysFromWallet(address, privKeyHex string) (apiKey, secret, passphr
 	}
 
 	timestampStr := fmt.Sprintf("%d", time.Now().Unix())
-	nonce := "0"
+	nonce := fmt.Sprintf("%d", time.Now().UnixMilli())
 
 	typedData := apitypes.TypedData{
 		Types: apitypes.Types{
