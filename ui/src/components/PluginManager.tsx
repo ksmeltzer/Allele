@@ -113,10 +113,10 @@ function ConfigFieldRow({
               <>
                 <InfoIcon sx={{ fontSize: 14, ml: 1, color: '#5B616E', '&:hover': { color: '#A6B0C3' } }} />
                 {/* Tooltip */}
-                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 bg-[#2B3139] text-[#E2E8F0] text-xs p-3 rounded shadow-xl border border-[#3A414A] z-50 leading-relaxed font-normal normal-case">
+                <div className="absolute left-0 top-full mt-2 hidden group-hover:block w-72 bg-[#2B3139] text-[#E2E8F0] text-xs p-3 rounded shadow-xl border border-[#3A414A] z-[100] leading-relaxed font-normal normal-case">
                   <div className="font-mono text-[10px] text-[#A6B0C3] mb-2 uppercase tracking-wider">{field.key}</div>
                   {field.explanation || field.description}
-                  <div className="absolute -bottom-1 left-4 w-2 h-2 bg-[#2B3139] border-b border-r border-[#3A414A] transform rotate-45"></div>
+                  <div className="absolute -top-1 left-4 w-2 h-2 bg-[#2B3139] border-t border-l border-[#3A414A] transform rotate-45"></div>
                 </div>
               </>
             )}
@@ -172,7 +172,7 @@ function ConfigModal({
         </div>
         <div className="p-6 overflow-y-auto bg-[#11141A]">
           {plugin.config && plugin.config.length > 0 ? (
-            <div className="space-y-5">
+            <div className="space-y-5 pb-32">
               {plugin.config.map(field => (
                 <ConfigFieldRow 
                   key={field.key} 
