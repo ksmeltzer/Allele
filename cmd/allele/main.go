@@ -137,7 +137,7 @@ func main() {
 
 	takerFee := 0.02
 	minProfitMargin := cfg.MinNetProfitMargin
-	completenessStrategy := strategy.NewCompletenessArbitrage(takerFee, minProfitMargin)
+	completenessStrategy := strategy.NewCompletenessArbitrage(takerFee, minProfitMargin, kernel.EventBus)
 	kernel.RegisterStrategy(completenessStrategy)
 
 	go kernel.Start(ctx)
