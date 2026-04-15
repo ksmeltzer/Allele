@@ -149,6 +149,7 @@ export default function PluginManager({
   const [loading, setLoading] = useState(true);
   const [installUri, setInstallUri] = useState('');
   const [configuringPlugin, setConfiguringPlugin] = useState<Manifest | null>(null);
+  const [pluginStatuses, setPluginStatuses] = useState<Record<string, { level: string; message: string }>>({});
 
   useEffect(() => {
     const handleOpenConfig = (e: Event) => {
@@ -166,7 +167,7 @@ export default function PluginManager({
   }, [allowedCategories]);
 
   useEffect(() => {
-    const unsubscribe = subscribe('manifests_updated', (payload: Manifest[]) => {
+    const unsubscribeManifests = subscribe('manifests_updated', (payload: Manifest[]) => {
       setPlugins(payload || []);
       setLoading(false);
       setConfiguringPlugin(prev => {
@@ -176,11 +177,31 @@ export default function PluginManager({
       });
     });
 
+    const unsubscribeAlerts = subscribe('system_alert', (payload: { source: string; level: string; message: string }) => {
+      if (payload && payload.source) {
+        setPluginStatuses(prev => {
+          // If it's an info alert, we assume the error condition is resolved.
+          if (payload.level === 'info') {
+            const newStatuses = { ...prev };
+            delete newStatuses[payload.source];
+            return newStatuses;
+          }
+          return {
+            ...prev,
+            [payload.source]: { level: payload.level, message: payload.message }
+          };
+        });
+      }
+    });
+
     if (connected) {
       sendEvent('request_manifests');
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeManifests();
+      unsubscribeAlerts();
+    };
   }, [connected, subscribe, sendEvent]);
 
   const handleConfigSubmit = (pluginName: string, configs: Record<string, string>) => {
@@ -272,7 +293,13 @@ export default function PluginManager({
                 {catPlugins.map((plugin) => {
                   const needsConfig = plugin.config?.some(c => c.required && (!c.value || c.value === ''));
                   const missingDeps = plugin.dependencies?.filter(dep => !pluginNames.includes(dep.name)) || [];
-                  const hasError = needsConfig || missingDeps.length > 0;
+                  const runtimeAlert = pluginStatuses[plugin.name];
+                  const hasError = needsConfig || missingDeps.length > 0 || (runtimeAlert && (runtimeAlert.level === 'error' || runtimeAlert.level === 'warning'));
+                  
+                  let tooltip = "Plugin is ready";
+                  if (needsConfig) tooltip = "Plugin needs configuration";
+                  else if (missingDeps.length > 0) tooltip = "Missing dependencies";
+                  else if (runtimeAlert) tooltip = runtimeAlert.message;
                   
                   return (
                     <div 
@@ -282,7 +309,7 @@ export default function PluginManager({
                         setConfiguringPlugin(plugin);
                       }}
                       className="group flex items-center p-2 rounded hover:bg-[#2B3139] cursor-pointer transition-colors relative z-10"
-                      title={hasError ? "Plugin needs configuration or dependencies" : "Plugin is ready"}
+                      title={tooltip}
                     >
                       {/* Left-aligned status indicator */}
                       <div className="w-6 flex items-center justify-center shrink-0">
@@ -300,6 +327,10 @@ export default function PluginManager({
                       
                       {missingDeps.length > 0 && (
                         <span className="ml-3 text-[10px] text-[#FB3836] bg-[#FB3836]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Missing Deps</span>
+                      )}
+                      
+                      {runtimeAlert && (runtimeAlert.level === 'warning' || runtimeAlert.level === 'error') && !missingDeps.length && !needsConfig && (
+                        <span className="ml-3 text-[10px] text-[#FB3836] bg-[#FB3836]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">System Error</span>
                       )}
                     </div>
                   );
