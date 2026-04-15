@@ -30,7 +30,7 @@ func NewPolymarketExchange(ws *polymarket.WsClient, rest *execution.Client, even
 
 	if eventBus != nil {
 		go p.listenForConfig()
-		go p.validateCredentials(time.Second * 2)
+		go p.healthCheckLoop()
 	}
 
 	return p
@@ -245,4 +245,11 @@ func (p *PolymarketExchange) SubmitOrder(ctx context.Context, wallet core.IWalle
 	sigStr := fmt.Sprintf("0x%x", sigBytes)
 
 	return p.restClient.PlaceOrder(&order, sigStr)
+}
+func (p *PolymarketExchange) healthCheckLoop() {
+	p.validateCredentials(time.Second * 2)
+	ticker := time.NewTicker(30 * time.Second)
+	for range ticker.C {
+		p.validateCredentials(0)
+	}
 }

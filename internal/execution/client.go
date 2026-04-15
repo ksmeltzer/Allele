@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"strings"
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -62,7 +63,9 @@ func (c *Client) PlaceOrder(order *Order, signature string) error {
 	requestPath := "/order"
 	message := timestamp + method + requestPath + string(data)
 
-	decodedSecret, err := base64.StdEncoding.DecodeString(c.apiSecret)
+	secretStr := strings.ReplaceAll(c.apiSecret, "-", "+")
+	secretStr = strings.ReplaceAll(secretStr, "_", "/")
+	decodedSecret, err := base64.StdEncoding.DecodeString(secretStr)
 	if err != nil {
 		return fmt.Errorf("failed to decode api secret: %w", err)
 	}
@@ -103,7 +106,9 @@ func (c *Client) PingAuth() error {
 	requestPath := "/auth" // Polymarket CLOB has an /auth endpoint for checking credentials
 	message := timestamp + method + requestPath
 
-	decodedSecret, err := base64.StdEncoding.DecodeString(c.apiSecret)
+	secretStr := strings.ReplaceAll(c.apiSecret, "-", "+")
+	secretStr = strings.ReplaceAll(secretStr, "_", "/")
+	decodedSecret, err := base64.StdEncoding.DecodeString(secretStr)
 	if err != nil {
 		return fmt.Errorf("failed to decode api secret: %w", err)
 	}
