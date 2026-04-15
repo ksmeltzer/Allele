@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -120,6 +121,34 @@ func (b *Broadcaster) handleConnection(conn *websocket.Conn) {
 
 		switch incoming.Type {
 		case "request_manifests":
+			b.sendManifests(conn)
+
+		case "install_plugin":
+			var req struct {
+				URI string `json:"uri"`
+			}
+			if err := json.Unmarshal(incoming.Payload, &req); err != nil {
+				b.sendError(conn, "install_plugin_error", "invalid payload")
+				continue
+			}
+
+			if b.pm == nil {
+				b.sendError(conn, "install_plugin_error", "plugin manager not available")
+				continue
+			}
+
+			// Install from URI
+			// Note: Context should be passed down, creating one here for now
+			ctx := context.Background()
+			if err := b.pm.InstallFromURI(ctx, req.URI); err != nil {
+				b.sendError(conn, "install_plugin_error", err.Error())
+				continue
+			}
+
+			b.Broadcast("plugin_status", map[string]string{
+				"plugin": req.URI,
+				"status": "installed",
+			})
 			b.sendManifests(conn)
 
 		case "update_config":

@@ -141,6 +141,49 @@ func (m *Manager) downloadAndLoadDependency(ctx context.Context, dep abi.Depende
 	return m.loadAndResolve(ctx, path)
 }
 
+func (m *Manager) LoadFromBytes(ctx context.Context, filename string, data []byte) error {
+	if err := os.MkdirAll(m.pluginsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create plugins dir: %w", err)
+	}
+
+	path := filepath.Join(m.pluginsDir, filename)
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("failed to write plugin file: %w", err)
+	}
+
+	if err := m.loadAndResolve(ctx, path); err != nil {
+		return fmt.Errorf("failed to resolve plugin: %w", err)
+	}
+
+	return nil
+}
+
+func (m *Manager) InstallFromURI(ctx context.Context, uri string) error {
+	resp, err := http.Get(uri)
+	if err != nil {
+		return fmt.Errorf("failed to fetch plugin from uri %s: %w", uri, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code fetching plugin: %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read plugin body: %w", err)
+	}
+
+	// Extract filename from URI or use a hash
+	filename := filepath.Base(uri)
+	if filename == "" || filename == "/" {
+		filename = "plugin.wasm" // fallback
+	}
+
+	return m.LoadFromBytes(ctx, filename, data)
+}
+
 func (m *Manager) GetManifests() []abi.Manifest {
 	var list []abi.Manifest
 	for _, man := range m.manifests {

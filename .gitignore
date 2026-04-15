@@ -29,3 +29,8 @@ arbitrage
 keygen
 watchdog
 *.wasm
+allele-bin
+backend.log
+frontend.log
+.sessions/
+watchdog.log
