@@ -38,7 +38,7 @@ func TestKernel_HealthArenaIntegration(t *testing.T) {
 	kernel.SetArena(ar)
 
 	strategyID := "test-strategy-1"
-	ar.AddOrganism(strategyID)
+	ar.AddOrganism(strategyID, "test_species", "test_filter", nil)
 
 	strategy := &mockStrategy{id: strategyID}
 	kernel.RegisterStrategy(strategy)

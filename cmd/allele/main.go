@@ -17,6 +17,7 @@ import (
 	"allele/internal/adapters/strategy"
 	"allele/internal/adapters/wallet"
 	"allele/internal/alerting"
+	"allele/internal/arena"
 	"allele/internal/config"
 	"allele/internal/core"
 	"allele/internal/dashboard"
@@ -106,6 +107,10 @@ func main() {
 
 	// Microkernel Setup
 	kernel := engine.NewKernel()
+
+	// Initialize and set Arena
+	ar := arena.NewArena()
+	kernel.SetArena(ar)
 
 	// Initialize Broadcaster
 	broadcaster := dashboard.NewBroadcaster(pm, kernel.EventBus)

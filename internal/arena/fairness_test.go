@@ -12,7 +12,7 @@ func TestArena_CalculateFitness_NoSidelining(t *testing.T) {
 	currentTime := time.Now()
 	arena.now = func() time.Time { return currentTime }
 
-	arena.AddOrganism("org1")
+	arena.AddOrganism("org1", "strategy", "all", nil)
 
 	// Simulate 10 seconds of active time
 	currentTime = currentTime.Add(10 * time.Second)
@@ -34,7 +34,7 @@ func TestArena_SidelineOrganism_CalculateFitness(t *testing.T) {
 	currentTime := time.Now()
 	arena.now = func() time.Time { return currentTime }
 
-	arena.AddOrganism("org2")
+	arena.AddOrganism("org2", "strategy", "all", nil)
 
 	// Active for 5 seconds
 	currentTime = currentTime.Add(5 * time.Second)
@@ -67,7 +67,7 @@ func TestArena_ReactivateOrganism(t *testing.T) {
 	currentTime := time.Now()
 	arena.now = func() time.Time { return currentTime }
 
-	arena.AddOrganism("org3")
+	arena.AddOrganism("org3", "strategy", "all", nil)
 
 	// Active for 2 seconds
 	currentTime = currentTime.Add(2 * time.Second)

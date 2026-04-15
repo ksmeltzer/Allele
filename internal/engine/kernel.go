@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"allele/internal/arena"
 	"allele/internal/core"
@@ -54,6 +55,9 @@ func (k *Kernel) RegisterWallet(w core.IWallet) {
 
 func (k *Kernel) RegisterStrategy(s core.IStrategy) {
 	k.strategies[s.ID()] = s
+	if k.arena != nil {
+		k.arena.AddOrganism(s.ID(), "WASM", "all", s.GetDNA())
+	}
 }
 
 func (k *Kernel) TickChan() chan core.NormalizedTick {
@@ -61,6 +65,22 @@ func (k *Kernel) TickChan() chan core.NormalizedTick {
 }
 
 func (k *Kernel) Start(ctx context.Context) {
+	if k.arena != nil {
+		go func() {
+			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					// Run the evolutionary selection and mutation process
+					k.arena.Evolve(5, 20)
+				}
+			}
+		}()
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -106,6 +126,14 @@ func (k *Kernel) Start(ctx context.Context) {
 					}
 
 					actions := strategy.Evaluate(k.MarketState)
+
+					if k.arena != nil && len(actions) > 0 {
+						mu.Lock()
+						// Mocking a small positive return per action so it has fitness to select on
+						_ = k.arena.RecordAction(strategyID, float64(len(actions))*0.001)
+						mu.Unlock()
+					}
+
 					for _, action := range actions {
 						exchangeID := action.MarketID
 						if exchangeID == "" {
