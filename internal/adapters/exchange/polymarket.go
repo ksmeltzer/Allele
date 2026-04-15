@@ -44,6 +44,46 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 	key, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY")
 	secret, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET")
 
+	// If missing API keys, but the user provided Wallet Address & Private Key in this plugin's config, auto-generate them.
+	if key == "" || secret == "" {
+		walletAddress, _ := storage.GetPluginConfig("allele-exchange-polymarket", "WALLET_ADDRESS")
+		walletPrivKey, _ := storage.GetPluginConfig("allele-exchange-polymarket", "WALLET_PRIVATE_KEY")
+
+		if walletAddress != "" && walletPrivKey != "" {
+			p.eventBus.Publish(core.Event{
+				Type: core.SystemAlertEvent,
+				Payload: map[string]interface{}{
+					"source":  "allele-exchange-polymarket",
+					"level":   "warning",
+					"message": "Auto-generating Polymarket API keys using provided wallet credentials...",
+				},
+			})
+
+			newKey, newSecret, newPassphrase, err := execution.GenerateKeysFromWallet(walletAddress, walletPrivKey)
+			if err == nil && newKey != "" {
+				// Store the newly generated keys
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_KEY", newKey)
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_SECRET", newSecret)
+				storage.SetPluginConfig("allele-exchange-polymarket", "POLY_API_PASSPHRASE", newPassphrase)
+
+				// Update the local instance variables so the next ping works
+				p.restClient = execution.NewClient(newKey, newSecret, newPassphrase)
+				key = newKey
+				secret = newSecret
+			} else {
+				p.eventBus.Publish(core.Event{
+					Type: core.SystemAlertEvent,
+					Payload: map[string]interface{}{
+						"source":  "allele-exchange-polymarket",
+						"level":   "error",
+						"message": fmt.Sprintf("Failed to auto-generate API keys: %v", err),
+					},
+				})
+				return
+			}
+		}
+	}
+
 	if key == "" || secret == "" {
 		p.eventBus.Publish(core.Event{
 			Type: core.SystemAlertEvent,
