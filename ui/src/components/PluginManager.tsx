@@ -177,7 +177,7 @@ export default function PluginManager({
       });
     });
 
-    const unsubscribeAlerts = subscribe('system_alert', (payload: { source: string; level: string; message: string }) => {
+    const unsubscribeAlerts = subscribe('health', (payload: { source: string; level: string; message: string }) => {
       if (payload && payload.source) {
         setPluginStatuses(prev => {
           return {
