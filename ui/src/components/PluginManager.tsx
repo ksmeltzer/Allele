@@ -313,7 +313,11 @@ export default function PluginManager({
                         e.stopPropagation();
                         setConfiguringPlugin(plugin);
                       }}
-                      className="group flex items-center p-2 rounded hover:bg-[#2B3139] cursor-pointer transition-colors relative z-10"
+                      className={`group flex items-center p-2 rounded cursor-pointer transition-all duration-500 relative z-10 ${
+                        isHealthy 
+                          ? "bg-[#00C087]/10 border border-[#00C087]/30 shadow-[0_0_15px_rgba(0,192,135,0.15)] hover:bg-[#00C087]/20" 
+                          : "hover:bg-[#2B3139] border border-transparent"
+                      }`}
                       title={tooltip}
                     >
                       {/* Left-aligned status indicator */}
@@ -326,7 +330,10 @@ export default function PluginManager({
                         </div>
                       </div>
                       
-                      <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${hasError || isUnknown ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
+                      <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${
+                        isHealthy ? "text-[#00C087] group-hover:text-[#00E5A0] font-bold" :
+                        (hasError || isUnknown) ? "text-[#E2E8F0] group-hover:text-white" : "text-[#A6B0C3] group-hover:text-[#E2E8F0]"
+                      }`}>
                         {plugin.name}
                       </span>
                       
