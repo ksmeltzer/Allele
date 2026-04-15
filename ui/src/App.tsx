@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from './contexts/WebSocketContext';
 import { Layout, Model, TabNode } from 'flexlayout-react';
 import type { IJsonModel } from 'flexlayout-react';
+import type { Manifest } from './types/plugin';
 import 'flexlayout-react/style/dark.css';
 
 // Material UI components
@@ -10,11 +11,52 @@ import IconButton from '@mui/material/IconButton';
 // Material UI Icons
 import SettingsIcon from '@mui/icons-material/Settings';
 import PulseIcon from '@mui/icons-material/WifiTethering'; // Custom stand-in for pulse
+import WarningIcon from '@mui/icons-material/WarningAmber';
 
 import CausalityTrace from './components/CausalityTrace';
 import PluginManager from './components/PluginManager';
 import TradeSignals from './components/TradeSignals';
 import RiskConstraints from './components/RiskConstraints';
+
+const GlobalStatusIndicators = () => {
+  const { subscribe, sendEvent, connected } = useWebSocket();
+  const [plugins, setPlugins] = useState<Manifest[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribe('manifests_updated', (payload: Manifest[]) => {
+      setPlugins(payload || []);
+    });
+
+    if (connected) {
+      sendEvent('request_manifests');
+    }
+
+    return () => unsubscribe();
+  }, [connected, subscribe, sendEvent]);
+
+  const pluginsNeedingConfig = plugins.filter(p => p.config?.some(c => c.required && (!c.value || c.value === '')));
+
+  if (pluginsNeedingConfig.length === 0) return null;
+
+  return (
+    <div className="flex items-center space-x-2 mr-4">
+      {pluginsNeedingConfig.map(p => (
+        <button
+          key={`alert-${p.name}`}
+          // We can't easily open the modal from here without global state, 
+          // but we can dispatch a custom DOM event that PluginManager can listen for.
+          onClick={() => {
+            document.dispatchEvent(new CustomEvent('open-plugin-config', { detail: p }));
+          }}
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-900/40 border border-yellow-700/50 rounded hover:bg-yellow-900/60 transition-colors text-yellow-500 text-xs font-bold"
+        >
+          <WarningIcon fontSize="inherit" />
+          <span>{p.name} NEEDS CONFIG</span>
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const ComingSoonPanel = ({ title, IconComponent }: { title: string, IconComponent: any }) => (
   <div className="h-full flex items-center justify-center bg-[#1B2028] text-[#A6B0C3] font-mono text-xs uppercase tracking-widest p-4">
@@ -184,7 +226,9 @@ function App() {
         </div>
         
         <div className="flex items-center space-x-4">
-          <div id="global-status-indicators" className="flex items-center mr-2"></div>
+          <div id="global-status-indicators" className="flex items-center mr-2">
+            <GlobalStatusIndicators />
+          </div>
           <div className="text-[12px] font-medium text-[#A6B0C3] flex items-center px-3 py-1.5 bg-[#1B2028] rounded border border-[#2B3139]">
             <span className="w-2 h-2 bg-[#00C087] rounded-full mr-2 shadow-[0_0_8px_rgba(0,192,135,0.6)]"></span> 
             Engine Connected

@@ -8,20 +8,18 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoIcon from '@mui/icons-material/Info';
 import PulseIcon from '@mui/icons-material/WifiTethering';
-import WarningIcon from '@mui/icons-material/WarningAmber';
 import DownloadIcon from '@mui/icons-material/FileDownload';
 
 function ConfigFieldRow({ 
-  pluginName, 
   field, 
-  onSubmit 
+  value,
+  onChange 
 }: { 
-  pluginName: string, 
   field: ConfigField, 
-  onSubmit: (pluginName: string, key: string, value: string) => void 
+  value: string,
+  onChange: (val: string) => void 
 }) {
-  const [localValue, setLocalValue] = useState(field.value || '');
-  const needsConfig = field.required && (!field.value || field.value === '');
+  const needsConfig = field.required && (!value || value === '');
 
   return (
     <div className="flex flex-col space-y-1.5 mb-4">
@@ -29,22 +27,13 @@ function ConfigFieldRow({
         {field.key} {field.required && <span className="text-[#FB3836] ml-1">*</span>}
         <span className="ml-2 font-normal text-[#5B616E]">- {field.description}</span>
       </label>
-      <div className="flex space-x-2">
-        <input
-          type={field.type === 'secret' ? 'password' : 'text'}
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          placeholder={field.type === 'secret' && field.value === '********' ? '********' : 'Enter value...'}
-          className={`flex-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono`}
-        />
-        <button 
-          onClick={() => onSubmit(pluginName, field.key, localValue)}
-          disabled={localValue === field.value || localValue === ''}
-          className="px-4 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] disabled:bg-[#2B3139] disabled:text-[#5B616E] text-white text-sm font-medium rounded transition-all duration-200"
-        >
-          Save
-        </button>
-      </div>
+      <input
+        type={field.type === 'secret' ? 'password' : 'text'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={field.type === 'secret' && field.value === '********' ? '********' : 'Enter value...'}
+        className={`w-full bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#4F46E5]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#4F46E5]/50 transition-all font-mono`}
+      />
     </div>
   );
 }
@@ -56,11 +45,24 @@ function ConfigModal({
 }: { 
   plugin: Manifest, 
   onClose: () => void, 
-  onSubmit: (pluginName: string, key: string, value: string) => void 
+  onSubmit: (pluginName: string, configs: Record<string, string>) => void 
 }) {
+  const [localConfigs, setLocalConfigs] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    plugin.config?.forEach(c => {
+      init[c.key] = c.value || '';
+    });
+    return init;
+  });
+
+  const handleSave = () => {
+    onSubmit(plugin.name, localConfigs);
+    onClose();
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[#1B2028] border border-[#2B3139] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-[#1B2028] border border-[#2B3139] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden modal-enter">
         <div className="px-6 py-4 border-b border-[#2B3139] flex items-center justify-between bg-[#1B2028]">
           <div className="flex items-center space-x-3">
             <SettingsIcon sx={{ color: '#A6B0C3' }} fontSize="small" />
@@ -82,9 +84,9 @@ function ConfigModal({
               {plugin.config.map(field => (
                 <ConfigFieldRow 
                   key={field.key} 
-                  pluginName={plugin.name} 
                   field={field} 
-                  onSubmit={onSubmit} 
+                  value={localConfigs[field.key] || ''}
+                  onChange={(val) => setLocalConfigs(prev => ({ ...prev, [field.key]: val }))}
                 />
               ))}
             </div>
@@ -94,12 +96,18 @@ function ConfigModal({
             </p>
           )}
         </div>
-        <div className="px-6 py-4 border-t border-[#2B3139] bg-[#1B2028] flex justify-end">
+        <div className="px-6 py-4 border-t border-[#2B3139] bg-[#1B2028] flex justify-end space-x-3">
           <button 
             onClick={onClose}
             className="px-6 py-2 bg-[#2B3139] hover:bg-[#3A414A] text-white text-sm font-medium rounded transition-all duration-200"
           >
-            Done
+            Cancel
+          </button>
+          <button 
+            onClick={handleSave}
+            className="px-6 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded transition-all duration-200"
+          >
+            Save
           </button>
         </div>
       </div>
@@ -134,13 +142,28 @@ interface PluginManagerProps {
 
 export default function PluginManager({ 
   allowedCategories, 
-  showInstallBar = true 
+  showInstallBar = true
 }: PluginManagerProps) {
   const { connected, subscribe, sendEvent } = useWebSocket();
   const [plugins, setPlugins] = useState<Manifest[]>([]);
   const [loading, setLoading] = useState(true);
   const [installUri, setInstallUri] = useState('');
   const [configuringPlugin, setConfiguringPlugin] = useState<Manifest | null>(null);
+
+  useEffect(() => {
+    const handleOpenConfig = (e: Event) => {
+      const customEvent = e as CustomEvent<Manifest>;
+      // Only open if this PluginManager contains the plugin category
+      const plugin = customEvent.detail;
+      const cat = getPluginCategory(plugin.name);
+      if (!allowedCategories || allowedCategories.includes(cat)) {
+        setConfiguringPlugin(plugin);
+      }
+    };
+    
+    document.addEventListener('open-plugin-config', handleOpenConfig);
+    return () => document.removeEventListener('open-plugin-config', handleOpenConfig);
+  }, [allowedCategories]);
 
   useEffect(() => {
     const unsubscribe = subscribe('manifests_updated', (payload: Manifest[]) => {
@@ -160,9 +183,15 @@ export default function PluginManager({
     return () => unsubscribe();
   }, [connected, subscribe, sendEvent]);
 
-  const handleConfigSubmit = (pluginName: string, key: string, value: string) => {
-    if (value === '********') return;
-    sendEvent('update_config', { plugin_name: pluginName, key, value });
+  const handleConfigSubmit = (pluginName: string, configs: Record<string, string>) => {
+    Object.entries(configs).forEach(([key, value]) => {
+      if (value === '********') return;
+      // Find original value
+      const original = plugins.find(p => p.name === pluginName)?.config?.find(c => c.key === key)?.value;
+      if (value !== original) {
+        sendEvent('update_config', { plugin_name: pluginName, key, value });
+      }
+    });
   };
 
   const handleInstall = (e: React.FormEvent) => {
@@ -192,28 +221,11 @@ export default function PluginManager({
   }
 
   const pluginNames = plugins.map(p => p.name);
-  const pluginsNeedingConfig = plugins.filter(p => p.config?.some(c => c.required && (!c.value || c.value === '')));
 
   return (
     <div className="bg-[#1B2028] h-full flex flex-col relative overflow-hidden">
       {configuringPlugin && (
         <ConfigModal plugin={configuringPlugin} onClose={() => setConfiguringPlugin(null)} onSubmit={handleConfigSubmit} />
-      )}
-
-      {pluginsNeedingConfig.length > 0 && createPortal(
-        <div className="flex items-center space-x-2 mr-4">
-          {pluginsNeedingConfig.map(p => (
-            <button
-              key={`alert-${p.name}`}
-              onClick={() => setConfiguringPlugin(p)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-900/40 border border-yellow-700/50 rounded hover:bg-yellow-900/60 transition-colors text-yellow-500 text-xs font-bold"
-            >
-              <WarningIcon fontSize="inherit" />
-              <span>{p.name} NEEDS CONFIG</span>
-            </button>
-          ))}
-        </div>,
-        document.getElementById('global-status-indicators') || document.body
       )}
 
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
@@ -274,9 +286,12 @@ export default function PluginManager({
                     >
                       {/* Left-aligned status indicator */}
                       <div className="w-6 flex items-center justify-center shrink-0">
-                        <div 
-                          className={`w-2 h-2 rounded-full ${hasError ? 'bg-[#FB3836] shadow-[0_0_8px_rgba(251,56,54,0.8)] animate-pulse' : 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]'}`}
-                        ></div>
+                        <div className="relative flex h-2 w-2">
+                          {hasError && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                          )}
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${hasError ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]'}`}></span>
+                        </div>
                       </div>
                       
                       <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${hasError ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
