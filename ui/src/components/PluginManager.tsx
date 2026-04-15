@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import type { Manifest, ConfigField } from '../types/plugin';
+
+// Material UI Icons
+import SettingsIcon from '@mui/icons-material/Settings';
+import CloseIcon from '@mui/icons-material/Close';
+import InfoIcon from '@mui/icons-material/Info';
+import PulseIcon from '@mui/icons-material/WifiTethering';
+import WarningIcon from '@mui/icons-material/WarningAmber';
+import DownloadIcon from '@mui/icons-material/FileDownload';
 
 function ConfigFieldRow({ 
   pluginName, 
@@ -17,9 +25,9 @@ function ConfigFieldRow({
 
   return (
     <div className="flex flex-col space-y-1.5 mb-4">
-      <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest flex items-center">
-        {field.key} {field.required && <span className="text-red-500 ml-1">*</span>}
-        <span className="ml-2 font-normal text-gray-500 lowercase opacity-70">- {field.description}</span>
+      <label className="text-[12px] font-medium text-[#A6B0C3] flex items-center">
+        {field.key} {field.required && <span className="text-[#FB3836] ml-1">*</span>}
+        <span className="ml-2 font-normal text-[#5B616E]">- {field.description}</span>
       </label>
       <div className="flex space-x-2">
         <input
@@ -27,12 +35,12 @@ function ConfigFieldRow({
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           placeholder={field.type === 'secret' && field.value === '********' ? '********' : 'Enter value...'}
-          className={`flex-1 bg-[#050505] border ${needsConfig ? 'border-yellow-600/50 focus:border-yellow-500' : 'border-[#1f2937] focus:border-blue-500'} rounded px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-900/50 transition-all font-mono`}
+          className={`flex-1 bg-[#0B0E11] border ${needsConfig ? 'border-yellow-600 focus:border-yellow-500' : 'border-[#2B3139] focus:border-[#0052FF]'} rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#0052FF]/50 transition-all font-mono`}
         />
         <button 
           onClick={() => onSubmit(pluginName, field.key, localValue)}
           disabled={localValue === field.value || localValue === ''}
-          className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-700 disabled:opacity-50 text-gray-200 text-xs font-bold uppercase tracking-wider rounded transition-all duration-200"
+          className="px-4 py-1.5 bg-[#0052FF] hover:bg-[#0040C5] disabled:bg-[#2B3139] disabled:text-[#5B616E] text-white text-sm font-medium rounded transition-all duration-200"
         >
           Save
         </button>
@@ -51,23 +59,26 @@ function ConfigModal({
   onSubmit: (pluginName: string, key: string, value: string) => void 
 }) {
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#0a0a0c] border border-[#2d3748] rounded-md shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-5 py-3 border-b border-[#1f2937] flex items-center justify-between bg-[#050505]">
-          <div>
-            <h3 className="text-sm font-bold text-gray-200">{plugin.name} Configuration</h3>
-            <p className="text-[10px] text-gray-500 tracking-wide uppercase">{plugin.description}</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-[#1B2028] border border-[#2B3139] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-[#2B3139] flex items-center justify-between bg-[#1B2028]">
+          <div className="flex items-center space-x-3">
+            <SettingsIcon sx={{ color: '#A6B0C3' }} fontSize="small" />
+            <div>
+              <h3 className="text-[16px] font-bold text-white">{plugin.name} Settings</h3>
+              <p className="text-[12px] text-[#A6B0C3]">{plugin.description}</p>
+            </div>
           </div>
           <button 
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 transition-colors p-1"
+            className="text-[#A6B0C3] hover:text-white transition-colors p-1 rounded-full hover:bg-[#2B3139] flex items-center justify-center"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <CloseIcon fontSize="small" />
           </button>
         </div>
-        <div className="p-5 overflow-y-auto">
+        <div className="p-6 overflow-y-auto bg-[#11141A]">
           {plugin.config && plugin.config.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {plugin.config.map(field => (
                 <ConfigFieldRow 
                   key={field.key} 
@@ -78,13 +89,15 @@ function ConfigModal({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-500 italic">This plugin does not require any configuration.</p>
+            <p className="text-sm text-[#A6B0C3] italic flex items-center">
+              <InfoIcon fontSize="small" sx={{ mr: 1 }} /> This plugin does not require any configuration.
+            </p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-[#1f2937] bg-[#050505] flex justify-end">
+        <div className="px-6 py-4 border-t border-[#2B3139] bg-[#1B2028] flex justify-end">
           <button 
             onClick={onClose}
-            className="px-4 py-2 bg-[#1f2937] hover:bg-[#374151] border border-gray-700 text-gray-200 text-xs font-bold uppercase tracking-wider rounded transition-all duration-200"
+            className="px-6 py-2 bg-[#2B3139] hover:bg-[#3A414A] text-white text-sm font-medium rounded transition-all duration-200"
           >
             Done
           </button>
@@ -95,7 +108,34 @@ function ConfigModal({
   );
 }
 
-export default function PluginManager() {
+// Helper to categorize plugins by their name pattern
+function getPluginCategory(name: string): string {
+  if (name.includes('-exchange-') || name.includes('-market-')) return 'Exchanges & Markets';
+  if (name.includes('-strategy-')) return 'Trading Strategies';
+  if (name.includes('-sensor-')) return 'Data Sensors';
+  if (name.includes('-risk-') || name.includes('-portfolio-')) return 'Risk & Portfolio';
+  return 'Core & Utilities';
+}
+
+// Ordered categories for display
+const CATEGORY_ORDER = [
+  'Exchanges & Markets',
+  'Data Sensors',
+  'Trading Strategies',
+  'Risk & Portfolio',
+  'Core & Utilities'
+];
+
+interface PluginManagerProps {
+  title?: string;
+  allowedCategories?: string[];
+  showInstallBar?: boolean;
+}
+
+export default function PluginManager({ 
+  allowedCategories, 
+  showInstallBar = true 
+}: PluginManagerProps) {
   const { connected, subscribe, sendEvent } = useWebSocket();
   const [plugins, setPlugins] = useState<Manifest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,8 +146,6 @@ export default function PluginManager() {
     const unsubscribe = subscribe('manifests_updated', (payload: Manifest[]) => {
       setPlugins(payload || []);
       setLoading(false);
-      
-      // Update configuring plugin if it's open so it gets the new state
       setConfiguringPlugin(prev => {
         if (!prev) return null;
         const updated = (payload || []).find(p => p.name === prev.name);
@@ -123,7 +161,7 @@ export default function PluginManager() {
   }, [connected, subscribe, sendEvent]);
 
   const handleConfigSubmit = (pluginName: string, key: string, value: string) => {
-    if (value === '********') return; // Don't submit masked value
+    if (value === '********') return;
     sendEvent('update_config', { plugin_name: pluginName, key, value });
   };
 
@@ -134,128 +172,131 @@ export default function PluginManager() {
     setInstallUri('');
   };
 
+  const groupedPlugins = useMemo(() => {
+    const groups: Record<string, Manifest[]> = {};
+    plugins.forEach(p => {
+      const cat = getPluginCategory(p.name);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+    return groups;
+  }, [plugins]);
+
   if (loading || !connected) {
     return (
-      <div className="bg-[#050505] border border-[#1f2937] p-6 text-gray-500 text-sm flex flex-col items-center justify-center h-full">
-        <span className="uppercase tracking-widest text-[10px] mb-2">{connected ? 'Requesting manifests...' : 'Waiting for connection...'}</span>
+      <div className="bg-[#1B2028] p-6 text-[#A6B0C3] text-sm flex flex-col items-center justify-center h-full">
+        <PulseIcon sx={{ fontSize: 32, mb: 1, animation: 'pulse 2s infinite' }} />
+        <span className="font-medium">{connected ? 'Loading plugins...' : 'Connecting to engine...'}</span>
       </div>
     );
   }
 
   const pluginNames = plugins.map(p => p.name);
-
-  // Find plugins that need configuration
-  const pluginsNeedingConfig = plugins.filter(p => 
-    p.config?.some(c => c.required && (!c.value || c.value === ''))
-  );
+  const pluginsNeedingConfig = plugins.filter(p => p.config?.some(c => c.required && (!c.value || c.value === '')));
 
   return (
-    <div className="bg-[#0a0a0c] h-full flex flex-col relative overflow-hidden">
+    <div className="bg-[#1B2028] h-full flex flex-col relative overflow-hidden">
       {configuringPlugin && (
-        <ConfigModal 
-          plugin={configuringPlugin} 
-          onClose={() => setConfiguringPlugin(null)} 
-          onSubmit={handleConfigSubmit} 
-        />
+        <ConfigModal plugin={configuringPlugin} onClose={() => setConfiguringPlugin(null)} onSubmit={handleConfigSubmit} />
       )}
 
-      {/* Global Status Injector - Injects into the main header */}
       {pluginsNeedingConfig.length > 0 && createPortal(
-        <div className="flex items-center space-x-2 animate-pulse">
+        <div className="flex items-center space-x-2 mr-4">
           {pluginsNeedingConfig.map(p => (
             <button
               key={`alert-${p.name}`}
               onClick={() => setConfiguringPlugin(p)}
-              className="flex items-center space-x-1.5 px-2 py-1 bg-yellow-900/30 border border-yellow-700 rounded text-yellow-500 text-[10px] uppercase font-bold tracking-widest hover:bg-yellow-900/50 transition-colors"
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-900/40 border border-yellow-700/50 rounded hover:bg-yellow-900/60 transition-colors text-yellow-500 text-xs font-bold"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              <span>{p.name} CONFIG REQUIRED</span>
+              <WarningIcon fontSize="inherit" />
+              <span>{p.name} NEEDS CONFIG</span>
             </button>
           ))}
         </div>,
         document.getElementById('global-status-indicators') || document.body
       )}
 
-      <div className="bg-[#050505] px-4 py-2 border-b border-[#1f2937] flex items-center justify-between z-10 shrink-0">
-        <h2 className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Plugin Vault</h2>
-        <span className="text-[10px] text-gray-400 font-bold px-2 py-0.5 rounded bg-[#1f2937] uppercase tracking-wider">{plugins.length} Active</span>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
-        <div className="p-3 bg-[#050505] border border-[#1f2937] rounded-sm relative overflow-hidden group">
-          <form onSubmit={handleInstall} className="flex space-x-2 relative z-10">
-            <input
-              type="text"
-              value={installUri}
-              onChange={(e) => setInstallUri(e.target.value)}
-              placeholder="Enter plugin URI to install..."
-              className="flex-1 bg-[#0a0a0c] border border-[#1f2937] rounded px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-900/50 transition-all font-mono"
-            />
-            <button 
-              type="submit"
-              disabled={!installUri.trim()}
-              className="px-3 py-1.5 bg-[#1f2937] hover:bg-[#374151] border border-gray-700 disabled:opacity-50 text-gray-200 text-xs font-bold uppercase tracking-wider rounded transition-all duration-200"
-            >
-              Install
-            </button>
-          </form>
-        </div>
-
-        {plugins.length === 0 && (
-          <div className="text-gray-600 text-center text-xs mt-10 uppercase tracking-widest">
-            No modules loaded in registry.
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
+        {/* Install Bar */}
+        {showInstallBar && (
+          <div className="bg-[#0B0E11] rounded p-1.5 flex items-center border border-[#2B3139] mb-4">
+            <DownloadIcon sx={{ color: '#5B616E', ml: 1, mr: 0.5 }} fontSize="small" />
+            <form onSubmit={handleInstall} className="flex flex-1">
+              <input
+                type="text"
+                value={installUri}
+                onChange={(e) => setInstallUri(e.target.value)}
+                placeholder="Install .wasm plugin via URI..."
+                className="flex-1 bg-transparent border-none text-[13px] text-white px-2 focus:outline-none focus:ring-0 placeholder-[#5B616E]"
+              />
+              <button 
+                type="submit"
+                disabled={!installUri.trim()}
+                className="px-4 py-1 bg-[#2B3139] hover:bg-[#3A414A] disabled:opacity-50 text-white text-[12px] font-medium rounded transition-colors"
+              >
+                Install
+              </button>
+            </form>
           </div>
         )}
 
-        {plugins.map((plugin) => {
-          const needsConfig = plugin.config?.some(c => c.required && (!c.value || c.value === ''));
-          const missingDeps = plugin.dependencies?.filter(dep => !pluginNames.includes(dep.name)) || [];
-          
-          return (
-            <div key={plugin.name} className={`p-3 bg-[#050505] border ${needsConfig || missingDeps.length > 0 ? 'border-yellow-900/50' : 'border-[#1f2937]'} rounded-sm relative overflow-hidden flex items-center justify-between`}>
-              <div className="flex items-center space-x-4">
-                {/* Status Indicator */}
-                <div className="relative flex items-center justify-center w-6 h-6">
-                  {needsConfig || missingDeps.length > 0 ? (
-                    <div className="absolute inset-0 bg-yellow-500/20 rounded-full animate-pulse"></div>
-                  ) : null}
-                  <div className={`w-2.5 h-2.5 rounded-full ${needsConfig || missingDeps.length > 0 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-                </div>
+        {plugins.length === 0 && (
+          <div className="text-[#5B616E] text-center text-sm mt-8 font-medium">
+            No plugins loaded.
+          </div>
+        )}
 
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-sm font-bold text-gray-200">{plugin.name}</h3>
-                    <span className="text-[9px] text-gray-500 uppercase tracking-wider bg-[#1f2937] px-1.5 py-0.5 rounded">v{plugin.version}</span>
-                  </div>
+        <div className="space-y-6">
+          {CATEGORY_ORDER.map(category => {
+            if (allowedCategories && !allowedCategories.includes(category)) return null;
+            const catPlugins = groupedPlugins[category];
+            if (!catPlugins || catPlugins.length === 0) return null;
+
+            return (
+              <div key={category} className="space-y-1">
+                <h4 className="text-[10px] font-bold text-[#5B616E] uppercase tracking-wider mb-2 pl-1 border-b border-[#2B3139] pb-1">
+                  {category}
+                </h4>
+                {catPlugins.map((plugin) => {
+                  const needsConfig = plugin.config?.some(c => c.required && (!c.value || c.value === ''));
+                  const missingDeps = plugin.dependencies?.filter(dep => !pluginNames.includes(dep.name)) || [];
+                  const hasError = needsConfig || missingDeps.length > 0;
                   
-                  {/* Compact Status Messages */}
-                  {missingDeps.length > 0 && (
-                    <p className="text-[10px] text-red-400 mt-1 uppercase tracking-widest">Missing deps: {missingDeps.map(d => d.name).join(', ')}</p>
-                  )}
-                  {needsConfig && (
-                    <p className="text-[10px] text-yellow-500 mt-1 uppercase tracking-widest">Configuration Required</p>
-                  )}
-                </div>
+                  return (
+                    <div 
+                      key={plugin.name} 
+                      onClick={() => setConfiguringPlugin(plugin)}
+                      className="group flex items-center p-2 rounded hover:bg-[#2B3139] cursor-pointer transition-colors"
+                      title={hasError ? "Plugin needs configuration or dependencies" : "Plugin is ready"}
+                    >
+                      {/* Fixed width container for left-aligned status indicator */}
+                      <div className="w-5 flex justify-center shrink-0">
+                        <div 
+                          className={hasError ? 'animate-[pulse_1.5s_ease-in-out_infinite]' : ''}
+                          style={{
+                            width: '8px', 
+                            height: '8px', 
+                            borderRadius: '50%',
+                            backgroundColor: hasError ? '#FB3836' : '#00C087',
+                            boxShadow: hasError ? '0 0 8px rgba(251,56,54,0.8)' : '0 0 8px rgba(0,192,135,0.5)'
+                          }}
+                        ></div>
+                      </div>
+                      
+                      <span className={`text-[13px] font-medium ml-2 truncate transition-colors ${hasError ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
+                        {plugin.name}
+                      </span>
+                      
+                      {missingDeps.length > 0 && (
+                        <span className="ml-3 text-[10px] text-[#FB3836] bg-[#FB3836]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Missing Deps</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className="flex items-center space-x-3">
-                <span className="text-[9px] text-gray-600 uppercase tracking-widest hidden sm:block">{plugin.author}</span>
-                {(plugin.config && plugin.config.length > 0) && (
-                  <button 
-                    onClick={() => setConfiguringPlugin(plugin)}
-                    className="p-1.5 text-gray-400 hover:text-white bg-[#1f2937] hover:bg-gray-700 rounded transition-colors"
-                    title="Configure Plugin"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
