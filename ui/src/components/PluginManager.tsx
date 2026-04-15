@@ -180,12 +180,6 @@ export default function PluginManager({
     const unsubscribeAlerts = subscribe('system_alert', (payload: { source: string; level: string; message: string }) => {
       if (payload && payload.source) {
         setPluginStatuses(prev => {
-          // If it's an info alert, we assume the error condition is resolved.
-          if (payload.level === 'info') {
-            const newStatuses = { ...prev };
-            delete newStatuses[payload.source];
-            return newStatuses;
-          }
           return {
             ...prev,
             [payload.source]: { level: payload.level, message: payload.message }
@@ -291,15 +285,26 @@ export default function PluginManager({
                   {category}
                 </h4>
                 {catPlugins.map((plugin) => {
+                  const isExchange = category === 'Exchanges & Markets';
                   const needsConfig = plugin.config?.some(c => c.required && (!c.value || c.value === ''));
                   const missingDeps = plugin.dependencies?.filter(dep => !pluginNames.includes(dep.name)) || [];
                   const runtimeAlert = pluginStatuses[plugin.name];
-                  const hasError = needsConfig || missingDeps.length > 0 || (runtimeAlert && (runtimeAlert.level === 'error' || runtimeAlert.level === 'warning'));
                   
-                  let tooltip = "Plugin is ready";
+                  const hasError = needsConfig || missingDeps.length > 0 || (runtimeAlert && (runtimeAlert.level === 'error' || runtimeAlert.level === 'warning'));
+                  const isUnknown = isExchange && !hasError && (!runtimeAlert || runtimeAlert.level !== 'info');
+                  const isHealthy = !hasError && !isUnknown;
+                  
+                  let tooltip = isHealthy ? "Plugin is ready" : "Connecting or unknown state...";
                   if (needsConfig) tooltip = "Plugin needs configuration";
                   else if (missingDeps.length > 0) tooltip = "Missing dependencies";
-                  else if (runtimeAlert) tooltip = runtimeAlert.message;
+                  else if (runtimeAlert && hasError) tooltip = runtimeAlert.message;
+                  else if (runtimeAlert && isHealthy) tooltip = runtimeAlert.message || "Plugin is ready";
+                  
+                  let dotBaseColor = 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]';
+                  if (hasError) dotBaseColor = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
+                  else if (isUnknown) dotBaseColor = 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]';
+                  
+                  let pingColor = hasError ? 'bg-red-500' : 'bg-yellow-500';
                   
                   return (
                     <div 
@@ -314,14 +319,14 @@ export default function PluginManager({
                       {/* Left-aligned status indicator */}
                       <div className="w-6 flex items-center justify-center shrink-0">
                         <div className="relative flex h-2 w-2">
-                          {hasError && (
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                          {(hasError || isUnknown) && (
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pingColor}`}></span>
                           )}
-                          <span className={`relative inline-flex rounded-full h-2 w-2 ${hasError ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]'}`}></span>
+                          <span className={`relative inline-flex rounded-full h-2 w-2 ${dotBaseColor}`}></span>
                         </div>
                       </div>
                       
-                      <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${hasError ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
+                      <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${hasError || isUnknown ? 'text-[#E2E8F0] group-hover:text-white' : 'text-[#A6B0C3] group-hover:text-[#E2E8F0]'}`}>
                         {plugin.name}
                       </span>
                       
