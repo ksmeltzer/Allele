@@ -20,6 +20,7 @@ type OrderbookState struct {
 
 type MarketState struct {
 	AssetPrices map[string]float64
+	Markets     map[string]map[string]float64 // MarketID -> map[AssetID]Price
 }
 
 type Action struct {

@@ -30,6 +30,7 @@ func NewKernel() *Kernel {
 		strategies: make(map[string]core.IStrategy),
 		MarketState: &core.MarketState{
 			AssetPrices: make(map[string]float64),
+			Markets:     make(map[string]map[string]float64),
 		},
 		tickChan:  make(chan core.NormalizedTick, 1000),
 		sidelined: make(map[string]bool),
@@ -87,6 +88,10 @@ func (k *Kernel) Start(ctx context.Context) {
 			return
 		case tick := <-k.tickChan:
 			k.MarketState.AssetPrices[tick.AssetID] = tick.Price
+			if k.MarketState.Markets[tick.MarketID] == nil {
+				k.MarketState.Markets[tick.MarketID] = make(map[string]float64)
+			}
+			k.MarketState.Markets[tick.MarketID][tick.AssetID] = tick.Price
 
 			if k.EventBus != nil {
 				k.EventBus.Publish(core.Event{
