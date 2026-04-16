@@ -9,7 +9,10 @@ export default function RiskConstraints() {
 
   useEffect(() => {
     const unsub = subscribe('health', payload => {
-      setConstraints(prev => [{ timestamp: new Date(), data: payload }, ...prev].slice(0, 50));
+      // Only show warnings or errors in the Risk Constraint pane
+      if (payload.level === 'warning' || payload.level === 'error' || payload.type === 'violation') {
+        setConstraints(prev => [{ timestamp: new Date(), data: payload }, ...prev].slice(0, 50));
+      }
     });
     return unsub;
   }, [subscribe]);
@@ -34,17 +37,24 @@ export default function RiskConstraints() {
             <span className="uppercase tracking-widest text-xs">All Systems Healthy</span>
           </div>
         ) : (
-          constraints.map((c, i) => (
-            <div key={i} className="p-2 rounded border-l-2 border-[#FB3836] bg-[#FB3836]/10 text-[#FB3836] flex flex-col space-y-1">
-              <div className="flex justify-between items-center opacity-80 text-[10px]">
-                <span className="font-bold uppercase">HEALTH WARNING</span>
-                <span>{c.timestamp.toLocaleTimeString()}</span>
+          constraints.map((c, i) => {
+            const isError = c.data.level === 'error' || c.data.type === 'violation';
+            const colorHex = isError ? '#FB3836' : '#EAB308'; // Red for errors, Yellow for warnings
+            return (
+              <div key={i} className={`p-2 rounded border-l-2 bg-opacity-10 flex flex-col space-y-1`} 
+                   style={{ borderColor: colorHex, backgroundColor: `${colorHex}1A`, color: colorHex }}>
+                <div className="flex justify-between items-center opacity-80 text-[10px]">
+                  <span className="font-bold uppercase">
+                    {c.data.level === 'warning' ? 'BOUNDARY WARNING' : 'RISK VIOLATION'}
+                  </span>
+                  <span>{c.timestamp.toLocaleTimeString()}</span>
+                </div>
+                <div className="text-[#E2E8F0] break-all">
+                  {c.data.message || JSON.stringify(c.data)}
+                </div>
               </div>
-              <div className="text-[#E2E8F0] break-all">
-                {JSON.stringify(c.data)}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
