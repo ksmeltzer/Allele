@@ -134,24 +134,31 @@ func (k *Kernel) Start(ctx context.Context) {
 
 					actions := strategy.Evaluate(k.MarketState)
 
-					if len(actions) > 0 && k.EventBus != nil {
+					var validActions []core.Action
+					for _, action := range actions {
+						if action.Side == core.BUY || action.Side == core.SELL {
+							validActions = append(validActions, action)
+						}
+					}
+
+					if len(validActions) > 0 && k.EventBus != nil {
 						k.EventBus.Publish(core.Event{
 							Type: "strategy_eval",
 							Payload: map[string]interface{}{
 								"strategy_id": strategyID,
-								"actions":     actions,
+								"actions":     validActions,
 							},
 						})
 					}
 
-					if k.arena != nil && len(actions) > 0 {
+					if k.arena != nil && len(validActions) > 0 {
 						mu.Lock()
 						// Mocking a small positive return per action so it has fitness to select on
-						_ = k.arena.RecordAction(strategyID, float64(len(actions))*0.001)
+						_ = k.arena.RecordAction(strategyID, float64(len(validActions))*0.001)
 						mu.Unlock()
 					}
 
-					for _, action := range actions {
+					for _, action := range validActions {
 						exchangeID := action.MarketID
 						if exchangeID == "" {
 							exchangeID = "polymarket"

@@ -8,6 +8,7 @@ import (
 	"allele/internal/abi"
 	"allele/internal/core"
 	"allele/internal/loader"
+	"allele/internal/polymarket"
 )
 
 type WasmStrategy struct {
@@ -93,16 +94,19 @@ func (w *WasmStrategy) Evaluate(state *core.MarketState) []core.Action {
 		}
 
 		var assetID string
+		var assetName string
 		if sig.Metadata != nil {
 			if id, ok := sig.Metadata["asset_id"].(string); ok {
 				assetID = id
+				assetName = polymarket.GetAssetMetadata(id)
 			}
 		}
-		
+
 		actions = append(actions, core.Action{
 			StrategyID: w.id,
 			MarketID:   "polymarket", // Extract from metadata or default to polymarket
 			AssetID:    assetID,
+			AssetName:  assetName,
 			Side:       side,
 			Price:      sig.Price,
 			Size:       sig.Size,
