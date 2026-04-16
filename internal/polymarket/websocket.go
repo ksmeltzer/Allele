@@ -112,6 +112,7 @@ func (c *WsClient) Listen(ctx context.Context, msgChan chan<- []byte) {
 				}
 				continue
 			}
+			log.Printf("WS RECV: %s", string(message))
 			msgChan <- message
 		}
 
@@ -135,8 +136,8 @@ func (c *WsClient) Subscribe(marketIDs []string) error {
 	c.marketIDs = marketIDs // save for resubscription
 
 	subMsg := map[string]interface{}{
-		"assets_ids": marketIDs,
-		"type":       "market",
+		"assets_ids":             marketIDs,
+		"type":                   "market",
 		"custom_feature_enabled": true,
 	}
 

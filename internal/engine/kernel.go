@@ -88,6 +88,13 @@ func (k *Kernel) Start(ctx context.Context) {
 		case tick := <-k.tickChan:
 			k.MarketState.AssetPrices[tick.AssetID] = tick.Price
 
+			if k.EventBus != nil {
+				k.EventBus.Publish(core.Event{
+					Type:    "tick",
+					Payload: tick,
+				})
+			}
+
 			var wg sync.WaitGroup
 			mu := &sync.Mutex{}
 
@@ -126,6 +133,16 @@ func (k *Kernel) Start(ctx context.Context) {
 					}
 
 					actions := strategy.Evaluate(k.MarketState)
+
+					if len(actions) > 0 && k.EventBus != nil {
+						k.EventBus.Publish(core.Event{
+							Type: "strategy_eval",
+							Payload: map[string]interface{}{
+								"strategy_id": strategyID,
+								"actions":     actions,
+							},
+						})
+					}
 
 					if k.arena != nil && len(actions) > 0 {
 						mu.Lock()

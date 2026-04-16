@@ -60,7 +60,7 @@ func Load(ctx context.Context, path string) (*WasmModule, error) {
 	modConfig := wazero.NewModuleConfig().
 		WithStdout(os.Stdout).
 		WithStderr(os.Stderr).
-		WithStartFunctions("_initialize") // WASI reactor mode initialization
+		WithStartFunctions() // Call nothing automatically
 
 	// Mount the plugin's directory so it can access config.yaml at /config
 	modConfig = modConfig.WithFSConfig(config.MountPluginFS(path, "/config"))
@@ -70,6 +70,27 @@ func Load(ctx context.Context, path string) (*WasmModule, error) {
 	if err != nil {
 		r.Close(ctx)
 		return nil, fmt.Errorf("instantiating module: %w", err)
+	}
+
+	// Try to initialize as a reactor module first (_initialize)
+	// Go 1.24+ c-shared WASI modules export _initialize which returns immediately after setup.
+	initFunc := mod.ExportedFunction("_initialize")
+	if initFunc != nil {
+		_, err := initFunc.Call(context.Background())
+		if err != nil {
+			r.Close(ctx)
+			return nil, fmt.Errorf("calling _initialize: %w", err)
+		}
+	} else {
+		// Fallback for older Go WASM binaries (which use _start and run main())
+		// Start the Go WASM runtime in a background goroutine so it doesn't block the host
+		startFunc := mod.ExportedFunction("_start")
+		if startFunc != nil {
+			go func() {
+				// This will block forever if main() has a select{} or similar
+				startFunc.Call(context.Background())
+			}()
+		}
 	}
 
 	return &WasmModule{

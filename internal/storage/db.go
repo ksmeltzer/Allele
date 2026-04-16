@@ -77,6 +77,14 @@ func LogTrade(strategy, conditionID string, profit float64) error {
 	return err
 }
 
+// HasPluginConfig checks if a configuration key exists in the database for a given plugin.
+func HasPluginConfig(pluginName, key string) bool {
+	query := `SELECT 1 FROM plugin_config WHERE plugin_name = ? AND key = ?`
+	var exists int
+	err := DB.QueryRow(query, pluginName, key).Scan(&exists)
+	return err == nil
+}
+
 // GetPluginConfig returns the configuration for a given plugin key, avoiding the need for .env variables.
 func GetPluginConfig(pluginName, key string) (string, error) {
 	query := `SELECT value FROM plugin_config WHERE plugin_name = ? AND key = ?`

@@ -53,9 +53,32 @@ func NewBroadcaster(pm *plugin.Manager, eventBus *core.EventBus) *Broadcaster {
 
 func (b *Broadcaster) listenEventBus() {
 	ch := b.eventBus.Subscribe(core.SystemAlertEvent)
-	for event := range ch {
-		b.Broadcast(string(event.Type), event.Payload)
-	}
+	go func() {
+		for event := range ch {
+			b.Broadcast(string(event.Type), event.Payload)
+		}
+	}()
+
+	wbCh := b.eventBus.Subscribe("wallet_balance")
+	go func() {
+		for event := range wbCh {
+			b.Broadcast(string(event.Type), event.Payload)
+		}
+	}()
+
+	tickCh := b.eventBus.Subscribe("tick")
+	go func() {
+		for event := range tickCh {
+			b.Broadcast(string(event.Type), event.Payload)
+		}
+	}()
+
+	evalCh := b.eventBus.Subscribe("strategy_eval")
+	go func() {
+		for event := range evalCh {
+			b.Broadcast(string(event.Type), event.Payload)
+		}
+	}()
 }
 
 func (b *Broadcaster) Start(port string) {

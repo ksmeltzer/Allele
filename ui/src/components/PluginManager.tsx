@@ -142,7 +142,7 @@ function ConfigModal({
   const [localConfigs, setLocalConfigs] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     plugin.config?.forEach(c => {
-      init[c.key] = c.value || '';
+      init[c.key] = c.value || c.defaultValue || '';
     });
     return init;
   });
@@ -382,9 +382,9 @@ export default function PluginManager({
                   const missingDeps = plugin.dependencies?.filter(dep => !pluginNames.includes(dep.name)) || [];
                   const runtimeAlert = pluginStatuses[plugin.name];
                   
-                  const hasError = needsConfig || missingDeps.length > 0 || (runtimeAlert && (runtimeAlert.level === 'error' || runtimeAlert.level === 'warning'));
-                  const isUnknown = isExchange && !hasError && (!runtimeAlert || runtimeAlert.level !== 'info');
-                  const isHealthy = !hasError && !isUnknown;
+                  const hasError = missingDeps.length > 0 || (runtimeAlert && (runtimeAlert.level === 'error' || runtimeAlert.level === 'warning'));
+                  const isUnknown = isExchange && !hasError && !needsConfig && (!runtimeAlert || runtimeAlert.level !== 'info');
+                  const isHealthy = !hasError && !needsConfig && !isUnknown;
                   
                   let tooltip = isHealthy ? "Plugin is ready" : "Connecting or unknown state...";
                   if (needsConfig) tooltip = "Plugin needs configuration";
@@ -394,9 +394,10 @@ export default function PluginManager({
                   
                   let dotBaseColor = 'bg-[#00C087] shadow-[0_0_8px_rgba(0,192,135,0.5)]';
                   if (hasError) dotBaseColor = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
+                  else if (needsConfig) dotBaseColor = 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]';
                   else if (isUnknown) dotBaseColor = 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]';
                   
-                  let pingColor = hasError ? 'bg-red-500' : 'bg-yellow-500';
+                  let pingColor = hasError ? 'bg-red-500' : needsConfig ? 'bg-orange-500' : 'bg-yellow-500';
                   
                   return (
                     <div 
@@ -415,7 +416,7 @@ export default function PluginManager({
                       {/* Left-aligned status indicator */}
                       <div className="w-6 flex items-center justify-center shrink-0">
                         <div className="relative flex h-2 w-2">
-                          {(hasError || isUnknown) && (
+                          {(hasError || needsConfig || isUnknown) && (
                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pingColor}`}></span>
                           )}
                           <span className={`relative inline-flex rounded-full h-2 w-2 ${dotBaseColor}`}></span>
@@ -424,7 +425,7 @@ export default function PluginManager({
                       
                       <span className={`text-[13px] font-medium ml-1 truncate transition-colors ${
                         isHealthy ? "text-[#00C087] group-hover:text-[#00E5A0] font-bold" :
-                        (hasError || isUnknown) ? "text-[#E2E8F0] group-hover:text-white" : "text-[#A6B0C3] group-hover:text-[#E2E8F0]"
+                        (hasError || needsConfig || isUnknown) ? "text-[#E2E8F0] group-hover:text-white" : "text-[#A6B0C3] group-hover:text-[#E2E8F0]"
                       }`}>
                         {plugin.name}
                       </span>
@@ -436,6 +437,15 @@ export default function PluginManager({
                       {runtimeAlert && (runtimeAlert.level === 'warning' || runtimeAlert.level === 'error') && !missingDeps.length && !needsConfig && (
                         <span className="ml-3 text-[10px] text-[#FB3836] bg-[#FB3836]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">System Error</span>
                       )}
+                      
+                      {/* Configuration action button */}
+                      <div className={`ml-auto flex items-center justify-center p-1 rounded-full transition-colors ${
+                        needsConfig 
+                          ? "text-orange-500 bg-orange-500/10 hover:bg-orange-500/20 shadow-[0_0_8px_rgba(249,115,22,0.4)]" 
+                          : "text-[#5B616E] hover:text-white hover:bg-[#3A414A]"
+                      }`}>
+                        <SettingsIcon sx={{ fontSize: 16 }} />
+                      </div>
                     </div>
                   );
                 })}

@@ -18,6 +18,7 @@ import CausalityTrace from './components/CausalityTrace';
 import PluginManager from './components/PluginManager';
 import TradeSignals from './components/TradeSignals';
 import RiskConstraints from './components/RiskConstraints';
+import WalletInfo from './components/WalletInfo';
 
 const GlobalStatusIndicators = () => {
   const { subscribe, sendEvent, connected } = useWebSocket();
@@ -252,6 +253,7 @@ function App() {
         </div>
         
         <div className="flex items-center space-x-4">
+          <WalletInfo />
           <div id="global-status-indicators" className="flex items-center mr-2">
             <GlobalStatusIndicators />
           </div>

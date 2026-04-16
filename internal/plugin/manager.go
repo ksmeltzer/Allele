@@ -13,6 +13,7 @@ import (
 
 	"allele/internal/abi"
 	"allele/internal/loader"
+	"allele/internal/storage"
 )
 
 type Manager struct {
@@ -88,6 +89,19 @@ func (m *Manager) loadAndResolve(ctx context.Context, path string) error {
 	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
 		mod.Close(ctx)
 		return fmt.Errorf("unmarshaling manifest: %w", err)
+	}
+
+	// Auto-populate default configuration values in the database if missing
+	for _, c := range manifest.Config {
+		if c.DefaultValue != "" {
+			if !storage.HasPluginConfig(manifest.Name, c.Key) {
+				if err := storage.SetPluginConfig(manifest.Name, c.Key, c.DefaultValue, c.Type == "secret"); err != nil {
+					log.Printf("Warning: failed to set default config %s for plugin %s: %v", c.Key, manifest.Name, err)
+				} else {
+					log.Printf("Auto-populated default config for %s: %s", manifest.Name, c.Key)
+				}
+			}
+		}
 	}
 
 	m.manifests[manifest.Name] = manifest
