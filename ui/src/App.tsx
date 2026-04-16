@@ -18,6 +18,7 @@ import CausalityTrace from './components/CausalityTrace';
 import PluginManager from './components/PluginManager';
 import TradeSignals from './components/TradeSignals';
 import RiskConstraints from './components/RiskConstraints';
+import PortfolioView from './components/PortfolioView';
 import WalletInfo from './components/WalletInfo';
 import HelpModal from './components/HelpModal';
 
@@ -181,6 +182,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
             weight: 70,
             children: [
               { type: "tab", name: "Trade Signals", component: "trades" },
+              { type: "tab", name: "Portfolios", component: "portfolio" },
               { type: "tab", name: "Risk Constraints", component: "risk" },
               { type: "tab", name: "Causality Trace", component: "causality" }
             ]
@@ -227,7 +229,7 @@ const DEFAULT_LAYOUT: IJsonModel = {
 
 function App() {
   const [model, setModel] = useState<Model>(() => {
-    const savedLayout = localStorage.getItem('allele-layout-v4');
+    const savedLayout = localStorage.getItem('allele-layout-v5');
     if (savedLayout) {
       try { return Model.fromJson(JSON.parse(savedLayout)); } 
       catch (e) { return Model.fromJson(DEFAULT_LAYOUT); }
@@ -237,7 +239,7 @@ function App() {
 
   const onModelChange = (newModel: Model) => {
     setModel(newModel);
-    localStorage.setItem('allele-layout-v4', JSON.stringify(newModel.toJson()));
+    localStorage.setItem('allele-layout-v5', JSON.stringify(newModel.toJson()));
   };
 
   const factory = (node: TabNode) => {
@@ -248,6 +250,7 @@ function App() {
       case "plugins_strategies": return <PluginManager allowedCategories={['Trading Strategies']} showInstallBar={false} />;
       case "plugins_core": return <PluginManager allowedCategories={['Core & Utilities', 'Data Sensors', 'Risk & Portfolio']} showInstallBar={true} />;
       case "trades": return <TradeSignals />;
+      case "portfolio": return <PortfolioView />;
       case "risk": return <RiskConstraints />;
       case "causality": return <CausalityTrace />;
       default: return <ComingSoonPanel title={component || "Unknown"} IconComponent={SettingsIcon} />;

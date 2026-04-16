@@ -11,6 +11,13 @@ import (
 	"allele/internal/health"
 )
 
+type Position struct {
+	AssetID   string  `json:"asset_id"`
+	AssetName string  `json:"asset_name"`
+	Size      float64 `json:"size"`
+	AvgPrice  float64 `json:"avg_price"`
+}
+
 type Kernel struct {
 	exchanges   map[string]core.IExchange
 	wallets     map[string]core.IWallet
@@ -21,6 +28,7 @@ type Kernel struct {
 	arena       *arena.Arena
 	sidelined   map[string]bool
 	EventBus    *core.EventBus
+	Portfolio   map[string]*Position
 }
 
 func NewKernel() *Kernel {
@@ -35,6 +43,7 @@ func NewKernel() *Kernel {
 		tickChan:  make(chan core.NormalizedTick, 1000),
 		sidelined: make(map[string]bool),
 		EventBus:  core.NewEventBus(),
+		Portfolio: make(map[string]*Position),
 	}
 }
 
@@ -77,6 +86,18 @@ func (k *Kernel) Start(ctx context.Context) {
 				case <-ticker.C:
 					// Run the evolutionary selection and mutation process
 					k.arena.Evolve(5, 20)
+
+					// Broadcast current paper portfolio state
+					var currentPortfolio []Position
+					for _, p := range k.Portfolio {
+						currentPortfolio = append(currentPortfolio, *p)
+					}
+					if k.EventBus != nil {
+						k.EventBus.Publish(core.Event{
+							Type:    "portfolio_update",
+							Payload: currentPortfolio,
+						})
+					}
 				}
 			}
 		}()
@@ -183,6 +204,44 @@ func (k *Kernel) Start(ctx context.Context) {
 
 						if err := exchange.SubmitOrder(ctx, wallet, action); err != nil {
 							log.Printf("Failed to submit order: %v", err)
+						}
+
+						// Paper Trading Portfolio Tracking (Always track for simulation purposes)
+						mu.Lock()
+						pos, exists := k.Portfolio[action.AssetID]
+						if !exists {
+							pos = &Position{
+								AssetID:   action.AssetID,
+								AssetName: action.AssetName,
+								Size:      0,
+								AvgPrice:  0,
+							}
+							k.Portfolio[action.AssetID] = pos
+						}
+
+						costValue := pos.Size * pos.AvgPrice
+						if action.Side == core.BUY {
+							newCostValue := costValue + (action.Size * action.Price)
+							pos.Size += action.Size
+							pos.AvgPrice = newCostValue / pos.Size
+						} else if action.Side == core.SELL {
+							pos.Size -= action.Size
+							if pos.Size <= 0 {
+								delete(k.Portfolio, action.AssetID)
+							}
+						}
+
+						var currentPortfolio []Position
+						for _, p := range k.Portfolio {
+							currentPortfolio = append(currentPortfolio, *p)
+						}
+						mu.Unlock()
+
+						if k.EventBus != nil {
+							k.EventBus.Publish(core.Event{
+								Type:    "portfolio_update",
+								Payload: currentPortfolio,
+							})
 						}
 					}
 				}(strategy, strategyID)
