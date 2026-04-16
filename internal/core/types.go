@@ -25,6 +25,7 @@ type MarketState struct {
 type Action struct {
 	MarketID   string
 	AssetID    string
+	AssetName  string
 	Side       ActionType
 	Price      float64
 	Size       float64
@@ -34,6 +35,7 @@ type Action struct {
 type NormalizedTick struct {
 	MarketID  string
 	AssetID   string
+	AssetName string
 	IsBid     bool
 	Price     float64
 	Size      float64

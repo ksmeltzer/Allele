@@ -295,6 +295,7 @@ func (p *PolymarketExchange) ConnectStream(ctx context.Context, tickChan chan<- 
 								tickChan <- core.NormalizedTick{
 									MarketID:  ev.MarketID,
 									AssetID:   ev.AssetID,
+									AssetName: polymarket.GetAssetMetadata(ev.AssetID),
 									IsBid:     true,
 									Price:     price,
 									Size:      size,
@@ -308,6 +309,7 @@ func (p *PolymarketExchange) ConnectStream(ctx context.Context, tickChan chan<- 
 								tickChan <- core.NormalizedTick{
 									MarketID:  ev.MarketID,
 									AssetID:   ev.AssetID,
+									AssetName: polymarket.GetAssetMetadata(ev.AssetID),
 									IsBid:     false,
 									Price:     price,
 									Size:      size,
@@ -346,6 +348,7 @@ func (p *PolymarketExchange) ConnectStream(ctx context.Context, tickChan chan<- 
 							tickChan <- core.NormalizedTick{
 								MarketID:  pce.MarketID,
 								AssetID:   pc.AssetID,
+								AssetName: polymarket.GetAssetMetadata(pc.AssetID),
 								IsBid:     pc.Side == "BUY",
 								Price:     price,
 								Size:      size,

@@ -135,6 +135,9 @@ func (c *WsClient) Listen(ctx context.Context, msgChan chan<- []byte) {
 func (c *WsClient) Subscribe(marketIDs []string) error {
 	c.marketIDs = marketIDs // save for resubscription
 
+	// Pre-warm the metadata cache for these assets
+	LoadMetadataForAssets(marketIDs)
+
 	subMsg := map[string]interface{}{
 		"assets_ids":             marketIDs,
 		"type":                   "market",
