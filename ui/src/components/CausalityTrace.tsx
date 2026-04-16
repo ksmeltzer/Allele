@@ -29,7 +29,13 @@ export default function CausalityTrace() {
                 <span>{ev.timestamp.toLocaleTimeString()}</span>
               </div>
               <pre className="text-[#E2E8F0] overflow-x-auto whitespace-pre-wrap">
-                {JSON.stringify(ev.data, null, 2)}
+                {JSON.stringify(ev.data, (key, value) => {
+                  // Keep it compact but show the new AssetName if it exists
+                  if (key === 'AssetID' && ev.data.AssetName) {
+                    return `${ev.data.AssetName} (${value})`;
+                  }
+                  return value;
+                }, 2)}
               </pre>
             </div>
           ))
