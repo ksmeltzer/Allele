@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import SecurityIcon from '@mui/icons-material/Security';
+import HelpModal from './HelpModal';
 
 export default function RiskConstraints() {
   const { subscribe } = useWebSocket();
@@ -15,7 +16,18 @@ export default function RiskConstraints() {
 
   return (
     <div className="bg-[#1B2028] h-full flex flex-col overflow-hidden relative">
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] min-h-0">
+      <div className="absolute top-2 right-4 z-10 flex items-center bg-[#11141A] rounded px-2 py-0.5 border border-[#2B3139]">
+        <HelpModal title="Risk Constraints (The Boundary)" iconColor="#A6B0C3" size="small">
+          <p>
+            If the Engine is the "Arena" where organisms act, the Risk Constraints represent the <strong>absolute boundaries</strong> of that environment.
+          </p>
+          <p className="mt-2">
+            Even if a Strategy (Organism) generates a <span className="text-[#4F46E5] font-bold">Strategy Eval</span> that commands a massive trade, it will be intercepted and nullified here if it violates max position sizing, drawdown limits, or total allowed leverage. This pane alerts you to any active health, limit, or boundary violations.
+          </p>
+        </HelpModal>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] min-h-0 pt-10">
         {constraints.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-[#A6B0C3] opacity-50 space-y-4">
             <SecurityIcon sx={{ fontSize: 48 }} />

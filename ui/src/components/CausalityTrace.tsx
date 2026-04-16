@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import HelpModal from './HelpModal';
 
 export default function CausalityTrace() {
   const { subscribe } = useWebSocket();
@@ -14,8 +15,19 @@ export default function CausalityTrace() {
   }, [subscribe]);
 
   return (
-    <div className="bg-[#1B2028] h-full flex flex-col overflow-hidden border-t border-[#2B3139]">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 font-mono text-[11px]">
+    <div className="bg-[#1B2028] h-full flex flex-col overflow-hidden border-t border-[#2B3139] relative">
+      <div className="absolute top-2 right-4 z-10 flex items-center bg-[#11141A] rounded px-2 py-0.5 border border-[#2B3139]">
+        <HelpModal title="Causality Trace (DNA Reasoning)" iconColor="#A6B0C3" size="small">
+          <p>
+            When an organism (strategy plugin) expresses a trait (takes an action), it dumps its internal memory stack and math logic here.
+          </p>
+          <p className="mt-2">
+            You can use this view to trace exactly <em>why</em> an agent decided to execute a trade, allowing you to audit the mathematical conditions that satisfied its "DNA" logic against the raw market environment.
+          </p>
+        </HelpModal>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 font-mono text-[11px] pt-10">
         {events.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-[#A6B0C3] opacity-50 space-y-4">
             <AccountTreeIcon sx={{ fontSize: 48 }} />

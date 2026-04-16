@@ -19,6 +19,7 @@ import PluginManager from './components/PluginManager';
 import TradeSignals from './components/TradeSignals';
 import RiskConstraints from './components/RiskConstraints';
 import WalletInfo from './components/WalletInfo';
+import HelpModal from './components/HelpModal';
 
 const GlobalStatusIndicators = () => {
   const { subscribe, sendEvent, connected } = useWebSocket();
@@ -85,8 +86,15 @@ const GlobalStatusIndicators = () => {
   );
 };
 
-const ComingSoonPanel = ({ title, IconComponent }: { title: string, IconComponent: any }) => (
-  <div className="h-full flex items-center justify-center bg-[#1B2028] text-[#A6B0C3] font-mono text-xs uppercase tracking-widest p-4">
+const ComingSoonPanel = ({ title, IconComponent, helpText }: { title: string, IconComponent: any, helpText?: React.ReactNode }) => (
+  <div className="h-full flex items-center justify-center bg-[#1B2028] text-[#A6B0C3] font-mono text-xs uppercase tracking-widest p-4 relative">
+    {helpText && (
+      <div className="absolute top-2 right-4 z-10 flex items-center bg-[#11141A] rounded px-2 py-0.5 border border-[#2B3139]">
+        <HelpModal title={title} iconColor="#A6B0C3" size="small">
+          {helpText}
+        </HelpModal>
+      </div>
+    )}
     <div className="flex flex-col items-center space-y-4 opacity-50">
       <IconComponent sx={{ fontSize: 48 }} />
       <span>{title} - Coming Soon</span>
@@ -120,7 +128,18 @@ const FirehosePanel = () => {
 
   return (
     <div className="bg-[#1B2028] h-full flex flex-col relative overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] leading-relaxed min-h-0">
+      <div className="absolute top-2 right-4 z-10 flex items-center bg-[#11141A] rounded px-2 py-0.5 border border-[#2B3139]">
+        <HelpModal title="System Telemetry" iconColor="#A6B0C3" size="small">
+          <p>
+            The raw central nervous system of the <strong>Allele Engine</strong>.
+          </p>
+          <p className="mt-2">
+            This stream displays all unprocessed JSON payloads routing through the central event bus, including plugin health pings, market data (ticks), strategy decisions, and error logs.
+          </p>
+        </HelpModal>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] leading-relaxed min-h-0 pt-10">
         {logs.length === 0 ? (
           <div className="text-[#A6B0C3] flex items-center space-x-2">
             <PulseIcon fontSize="small" sx={{ animation: 'pulse 2s infinite' }} />
@@ -247,7 +266,20 @@ function App() {
           
           <nav className="hidden md:flex items-center space-x-6 text-[13px] font-medium text-[#A6B0C3]">
             <a href="#" className="text-white border-b-2 border-[#4F46E5] pb-1 hover:text-white transition-colors">Trade Engine</a>
-            <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Portfolios</a>
+            <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">
+              Portfolios
+              <HelpModal title="Portfolios (Coming Soon)" iconColor="#A6B0C3" size="small">
+                <p>
+                  The Portfolios view tracks positions that plugins (Organisms) have successfully entered.
+                </p>
+                <p className="mt-2">
+                  Once an organism expresses an Action (buy/sell) via a <span className="text-[#4F46E5] font-bold">Strategy Eval</span> event, the trade is sent to the target exchange. The resulting real-world holdings are monitored here.
+                </p>
+                <p className="mt-2 text-yellow-500 italic">
+                  Note: The portfolio data integration is currently being mapped to the Wallet RPC providers.
+                </p>
+              </HelpModal>
+            </a>
             <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Risk Limits</a>
           </nav>
         </div>

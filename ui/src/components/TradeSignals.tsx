@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import InsightsIcon from '@mui/icons-material/Insights';
+import HelpModal from './HelpModal';
 
 export default function TradeSignals() {
   const { subscribe } = useWebSocket();
@@ -72,7 +73,19 @@ export default function TradeSignals() {
 
   return (
     <div className="bg-[#1B2028] h-full flex flex-col overflow-hidden relative">
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] min-h-0">
+      <div className="absolute top-2 right-4 z-10 flex items-center bg-[#11141A] rounded px-2 py-0.5 border border-[#2B3139]">
+        <HelpModal title="Trade Signals & Traits" iconColor="#A6B0C3" size="small">
+          <p>
+            In the <strong>Allele metaphor</strong>, this stream represents how organisms react to their environment.
+          </p>
+          <ul className="list-disc pl-4 space-y-2 mt-2">
+            <li><span className="text-[#00C087] font-bold">Market Ticks</span>: The raw environmental stimuli (price movements and book updates) from prediction markets.</li>
+            <li><span className="text-[#4F46E5] font-bold">Strategy Evals</span>: This is the critical indicator! It shows when an organism (a WASM plugin) successfully found what it was looking for in the data and <em>expressed a phenotypic trait</em> by generating an Action (like a Buy/Sell order).</li>
+          </ul>
+        </HelpModal>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px] min-h-0 pt-10">
         {signals.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-[#A6B0C3] opacity-50 space-y-4">
             <InsightsIcon sx={{ fontSize: 48 }} />
