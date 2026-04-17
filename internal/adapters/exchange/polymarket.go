@@ -71,15 +71,26 @@ func (p *PolymarketExchange) checkAndApprove(rpcURL, network, privKeyHex string)
 
 	matic, usdc, err := rpcManager.GetBalances(ctx)
 	if err == nil {
+		// Calculate true floats (MATIC has 18 decimals, USDC has 6)
+		maticFloat := new(big.Float).SetInt(matic)
+		maticFloat.Quo(maticFloat, big.NewFloat(1e18))
+		mFloat, _ := maticFloat.Float64()
+
+		usdcFloat := new(big.Float).SetInt(usdc)
+		usdcFloat.Quo(usdcFloat, big.NewFloat(1e6))
+		uFloat, _ := usdcFloat.Float64()
+
 		p.eventBus.Publish(core.Event{
 			Type: "wallet_balance",
 			Payload: map[string]interface{}{
 				"address": crypto.PubkeyToAddress(pk.PublicKey).Hex(),
 				"network": network,
-				"matic":   float64(matic.Int64()) / 1e18,
-				"usdc":    float64(usdc.Int64()) / 1e6,
+				"matic":   mFloat,
+				"usdc":    uFloat,
 			},
 		})
+	} else {
+		log.Printf("PolymarketExchange: GetBalances failed: %v", err)
 	}
 }
 
