@@ -269,7 +269,6 @@ function App() {
           
           <nav className="hidden md:flex items-center space-x-6 text-[13px] font-medium text-[#A6B0C3]">
             <a href="#" className="text-white border-b-2 border-[#4F46E5] pb-1 hover:text-white transition-colors">Trade Engine</a>
-            <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Risk Limits</a>
           </nav>
         </div>
         

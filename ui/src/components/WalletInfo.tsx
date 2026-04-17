@@ -8,8 +8,9 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 interface WalletPayload {
   address: string;
   network: string;
-  matic: number;
-  usdc: number;
+  balances?: Record<string, number>;
+  matic?: number; // legacy
+  usdc?: number; // legacy
 }
 
 const WalletInfo: React.FC = () => {
@@ -42,7 +43,17 @@ const WalletInfo: React.FC = () => {
   };
 
   const isSimulation = wallet.network.toLowerCase().includes('amoy') || wallet.network.toLowerCase().includes('testnet');
-  const needsFunding = isSimulation && wallet.matic < 0.01 && wallet.usdc < 1;
+  const maticVal = wallet.balances?.MATIC ?? wallet.matic ?? 0;
+  const usdcVal = wallet.balances?.USDC ?? wallet.usdc ?? 0;
+  const needsFunding = isSimulation && maticVal < 0.01 && usdcVal < 1;
+
+  // Extract balances array for generic display, falling back to legacy keys if needed
+  const displayBalances: [string, number][] = wallet.balances 
+    ? Object.entries(wallet.balances) 
+    : [
+        ['USDC', wallet.usdc ?? 0],
+        ['MATIC', wallet.matic ?? 0]
+      ];
 
   return (
     <>
@@ -57,14 +68,14 @@ const WalletInfo: React.FC = () => {
         </div>
         
         <div className="flex space-x-4">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#A6B0C3] uppercase tracking-wider">USDC</span>
-            <span className="font-mono text-[#00C087]">{formatCurrency(wallet.usdc)}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#A6B0C3] uppercase tracking-wider">MATIC</span>
-            <span className="font-mono text-white">{formatCurrency(wallet.matic)}</span>
-          </div>
+          {displayBalances.map(([symbol, amount]) => (
+            <div key={symbol} className="flex flex-col">
+              <span className="text-[10px] text-[#A6B0C3] uppercase tracking-wider">{symbol}</span>
+              <span className={`font-mono ${symbol.includes('USDC') ? 'text-[#00C087]' : 'text-white'}`}>
+                {formatCurrency(amount as number)}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 

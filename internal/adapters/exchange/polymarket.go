@@ -85,8 +85,10 @@ func (p *PolymarketExchange) checkAndApprove(rpcURL, network, privKeyHex string)
 			Payload: map[string]interface{}{
 				"address": crypto.PubkeyToAddress(pk.PublicKey).Hex(),
 				"network": network,
-				"matic":   mFloat,
-				"usdc":    uFloat,
+				"balances": map[string]float64{
+					"MATIC": mFloat,
+					"USDC":  uFloat,
+				},
 			},
 		})
 	} else {
@@ -107,16 +109,19 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 	rpcURL, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLYGON_RPC_URL")
 	network, _ := storage.GetPluginConfig("allele-exchange-polymarket", "NETWORK")
 
-	// Auto-heal: Replace dead default RPCs with the working Amoy one
-	if rpcURL == "" || rpcURL == "https://polygon-rpc.com" {
-		rpcURL = "https://rpc-amoy.polygon.technology"
-		storage.SetPluginConfig("allele-exchange-polymarket", "POLYGON_RPC_URL", rpcURL, false)
-	}
-
 	// Auto-heal: Default to Simulation Mode (Amoy Testnet) if unconfigured
 	if network == "" {
 		network = "Polygon Amoy Testnet"
 		storage.SetPluginConfig("allele-exchange-polymarket", "NETWORK", network, false)
+	}
+
+	// Auto-heal: Sync RPC URL with the selected network
+	if network == "Polygon Amoy Testnet" && (rpcURL == "" || rpcURL == "https://polygon-rpc.com") {
+		rpcURL = "https://rpc-amoy.polygon.technology"
+		storage.SetPluginConfig("allele-exchange-polymarket", "POLYGON_RPC_URL", rpcURL, false)
+	} else if network == "Polygon Mainnet" && (rpcURL == "" || rpcURL == "https://rpc-amoy.polygon.technology") {
+		rpcURL = "https://polygon-rpc.com"
+		storage.SetPluginConfig("allele-exchange-polymarket", "POLYGON_RPC_URL", rpcURL, false)
 	}
 
 	// Auto-generate crypto wallet if none exists
@@ -194,6 +199,10 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 		}
 	}
 
+	if walletPrivKey != "" {
+		go p.checkAndApprove(rpcURL, network, walletPrivKey)
+	}
+
 	if key == "" || secret == "" {
 		p.eventBus.Publish(core.Event{
 			Type: core.SystemAlertEvent,
@@ -225,14 +234,6 @@ func (p *PolymarketExchange) validateCredentials(delay time.Duration) {
 				},
 			})
 		} else {
-			walletPrivKey, _ := storage.GetPluginConfig("allele-exchange-polymarket", "WALLET_PRIVATE_KEY")
-			rpcURL, _ := storage.GetPluginConfig("allele-exchange-polymarket", "POLYGON_RPC_URL")
-			network, _ := storage.GetPluginConfig("allele-exchange-polymarket", "NETWORK")
-
-			if walletPrivKey != "" {
-				go p.checkAndApprove(rpcURL, network, walletPrivKey)
-			}
-
 			p.eventBus.Publish(core.Event{
 				Type: core.SystemAlertEvent,
 				Payload: map[string]interface{}{
