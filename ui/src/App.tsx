@@ -269,20 +269,6 @@ function App() {
           
           <nav className="hidden md:flex items-center space-x-6 text-[13px] font-medium text-[#A6B0C3]">
             <a href="#" className="text-white border-b-2 border-[#4F46E5] pb-1 hover:text-white transition-colors">Trade Engine</a>
-            <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">
-              Portfolios
-              <HelpModal title="Portfolios (Coming Soon)" iconColor="#A6B0C3" size="small">
-                <p>
-                  The Portfolios view tracks positions that plugins (Organisms) have successfully entered.
-                </p>
-                <p className="mt-2">
-                  Once an organism expresses an Action (buy/sell) via a <span className="text-[#4F46E5] font-bold">Strategy Eval</span> event, the trade is sent to the target exchange. The resulting real-world holdings are monitored here.
-                </p>
-                <p className="mt-2 text-yellow-500 italic">
-                  Note: The portfolio data integration is currently being mapped to the Wallet RPC providers.
-                </p>
-              </HelpModal>
-            </a>
             <a href="#" className="hover:text-white transition-colors pb-1 border-b-2 border-transparent">Risk Limits</a>
           </nav>
         </div>
